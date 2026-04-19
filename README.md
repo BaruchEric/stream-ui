@@ -28,15 +28,27 @@ render(spec, stage, (event: ActionEvent) => {
 })
 ```
 
-### Component kinds
+### Component kinds (v0.2)
 
-- `text` — `{ kind: 'text', content }`
-- `card` — `{ kind: 'card', title, body }`
-- `button` — `{ kind: 'button', label, action }`
-- `list` — `{ kind: 'list', items }`
-- `form` — `{ kind: 'form', submitLabel, fields: [{ name, label, type, placeholder? }] }`
+**Display** — `text` · `heading` · `paragraph` · `code` · `divider` · `image`
 
-Buttons and form submissions fire `ActionEvent { action, payload? }` through the optional handler — feed those back into your agent loop to close the human ↔ AI ↔ UI loop.
+**Container** — `card`
+
+**Feedback** — `alert` (info / success / warning / error) · `badge` · `spinner` · `progress`
+
+**Data** — `list` (ordered or unordered) · `table`
+
+**Input** — `input` · `textarea` · `select` · `checkbox` · `form`
+
+**Action** — `button` (default / primary / danger) · `link`
+
+Inputs and actions fire `ActionEvent { action, payload? }` through the optional handler — feed those back into your agent loop to close the human ↔ AI ↔ UI loop.
+
+### API
+
+- `render(spec, container, onAction?)` — replace container content with a single component
+- `append(spec, container, onAction?)` — append a component to existing content
+- `clear(container)` — empty the container
 
 ## Playground
 
@@ -50,7 +62,7 @@ Opens a 3-pane demo at http://localhost:5173:
 - **AI** — the (mock) agent's reasoning stream
 - **UI** — the components the agent renders
 
-Try: `make a button`, `build a form`, `show a list`, `add a card`.
+Try: `palette` (renders one of every kind), `make a button`, `alert error`, `show a table`, `add a checkbox`.
 
 ## Develop
 
