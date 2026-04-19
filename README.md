@@ -69,9 +69,64 @@ Layout primitives accept `gap: 'sm' | 'md' | 'lg'`. `row` also accepts `align: '
 
 ### API
 
+**Dispatch (uses the registry):**
+
 - `render(spec, container, onAction?)` — replace container content with a single component
 - `append(spec, container, onAction?)` — append a component to existing content
+- `createElement(spec, onAction?)` — low-level: spec → DOM element
 - `clear(container)` — empty the container
+
+**Registry — extend with your own kinds:**
+
+```ts
+import { register, listKinds } from 'stream-ui'
+
+type KanbanCardSpec = {
+  kind: 'kanban-card'
+  title: string
+  status: 'todo' | 'doing' | 'done'
+}
+
+register<KanbanCardSpec>('kanban-card', (spec, onAction) => {
+  const el = document.createElement('article')
+  el.className = `kanban-card kanban-${spec.status}`
+  el.textContent = spec.title
+  return el
+})
+
+// Now any consumer (the agent, your code, anywhere) can render this:
+render({ kind: 'kanban-card', title: 'Ship it', status: 'doing' }, stage)
+
+// listKinds() is useful for generating an agent's tool schema:
+console.log(listKinds())  // ['alert', 'badge', 'button', ..., 'kanban-card']
+```
+
+- `register(kind, renderer)` — add a renderer for a custom kind (or override a built-in)
+- `unregister(kind)` — remove a kind
+- `getRenderer(kind)` — look up a renderer
+- `hasKind(kind)` — check if registered
+- `listKinds()` — array of all registered kinds (sorted)
+
+**Use built-ins directly without the registry:**
+
+Every built-in is a pure function exposed via `builtins.<kind>`. Call them with no framework state if you want:
+
+```ts
+import { builtins } from 'stream-ui'
+
+const buttonEl = builtins.button({ kind: 'button', label: 'Hi', action: 'x' })
+container.appendChild(buttonEl)
+```
+
+### Architecture
+
+The framework is intentionally **agent-agnostic**:
+
+- The agent (or your code) generates `ComponentSpec` JSON.
+- The framework dispatches each spec through the registry → DOM.
+- Built-ins, registry, and dispatch are three separable concerns. Each renderer is a pure `(spec, onAction?) => HTMLElement` and can be called independently of the rest of the framework.
+
+The agent is the *primary* consumer, but never the *only* one.
 
 ## Playground
 

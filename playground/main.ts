@@ -1,4 +1,54 @@
-import { type ActionEvent, type ComponentSpec, VERSION, append, render } from '../src/index'
+import {
+  type ActionEvent,
+  type ActionHandler,
+  type AnySpec,
+  type ComponentSpec,
+  VERSION,
+  append,
+  listKinds,
+  register,
+  render,
+} from '../src/index'
+
+// ─── DEMO: register a custom (consumer-defined) component kind ──────────
+// This is what an app would do to add domain-specific UI to stream-ui:
+// declare a spec shape, write a renderer, call register(). The agent (or
+// any other consumer) can then emit `{ kind: 'kanban-card', ... }` and the
+// framework will dispatch to this renderer just like any built-in.
+type KanbanCardSpec = {
+  kind: 'kanban-card'
+  title: string
+  status: 'todo' | 'doing' | 'done'
+  assignee?: string
+  action?: string
+}
+
+register<KanbanCardSpec>('kanban-card', (spec, onAction) => {
+  const el = document.createElement('article')
+  el.className = `kanban-card kanban-${spec.status}`
+  const titleEl = document.createElement('strong')
+  titleEl.className = 'kanban-title'
+  titleEl.textContent = spec.title
+  const statusEl = document.createElement('span')
+  statusEl.className = 'kanban-status'
+  statusEl.textContent = spec.status.toUpperCase()
+  const headerRow = document.createElement('div')
+  headerRow.className = 'kanban-header'
+  headerRow.append(titleEl, statusEl)
+  el.appendChild(headerRow)
+  if (spec.assignee) {
+    const assigneeEl = document.createElement('span')
+    assigneeEl.className = 'kanban-assignee'
+    assigneeEl.textContent = `@${spec.assignee}`
+    el.appendChild(assigneeEl)
+  }
+  const action = spec.action
+  if (action) {
+    el.style.cursor = 'pointer'
+    el.addEventListener('click', () => onAction?.({ action, payload: { title: spec.title } }))
+  }
+  return el
+})
 
 const chatLog = document.getElementById('chat-log') as HTMLElement
 const chatInput = document.getElementById('chat-input') as HTMLInputElement
@@ -35,8 +85,8 @@ const onAction = (event: ActionEvent): void => {
 
 type AgentEvent =
   | { type: 'thinking'; text: string }
-  | { type: 'render'; spec: ComponentSpec }
-  | { type: 'append'; spec: ComponentSpec }
+  | { type: 'render'; spec: ComponentSpec | AnySpec }
+  | { type: 'append'; spec: ComponentSpec | AnySpec }
 
 function paletteSpecs(): ComponentSpec[] {
   return [
@@ -457,6 +507,27 @@ async function* mockAgent(prompt: string): AsyncGenerator<AgentEvent> {
           { kind: 'badge', content: 'three', variant: 'warning' },
         ],
       },
+    }
+  } else if (lower.includes('kanban')) {
+    yield {
+      type: 'thinking',
+      text: `Component → kanban-card (custom-registered, ${listKinds().length} kinds total)`,
+    }
+    await sleep(200)
+    const status: 'todo' | 'doing' | 'done' = lower.includes('done')
+      ? 'done'
+      : lower.includes('doing') || lower.includes('progress')
+        ? 'doing'
+        : 'todo'
+    yield {
+      type: op,
+      spec: {
+        kind: 'kanban-card',
+        title: extractAfter(prompt, ['kanban']) || 'Implement feature X',
+        status,
+        assignee: 'eric',
+        action: 'kanban-click',
+      } as AnySpec,
     }
   } else if (lower.includes('grid')) {
     yield { type: 'thinking', text: 'Component → grid (2-col)' }

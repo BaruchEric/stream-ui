@@ -521,3 +521,71 @@ code {
 .sui-link:hover {
   color: rgb(130, 175, 255);
 }
+
+/* ─── consumer-registered example: kanban-card ─────────────────────── */
+
+.kanban-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  border-left: 3px solid;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(127, 127, 127, 0.05);
+}
+
+.kanban-todo {
+  border-left-color: rgb(180, 180, 180);
+}
+.kanban-doing {
+  border-left-color: rgb(220, 170, 70);
+}
+.kanban-done {
+  border-left-color: rgb(80, 180, 100);
+}
+
+.kanban-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.kanban-title {
+  font-size: 0.9rem;
+}
+
+.kanban-status {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.2);
+}
+
+.kanban-todo .kanban-status {
+  color: rgb(180, 180, 180);
+}
+.kanban-doing .kanban-status {
+  color: rgb(220, 170, 70);
+}
+.kanban-done .kanban-status {
+  color: rgb(80, 180, 100);
+}
+
+.kanban-assignee {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* unknown component fallback (rendered when kind is not registered) */
+.sui-unknown {
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed rgba(220, 90, 90, 0.5);
+  border-radius: 0.5rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: rgb(220, 90, 90);
+}
