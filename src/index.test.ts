@@ -4,7 +4,7 @@ import { VERSION, builtins, hasKind, listKinds, register, unregister } from './i
 
 describe('stream-ui', () => {
   it('exports a version', () => {
-    expect(VERSION).toBe('0.6.0')
+    expect(VERSION).toBe('0.6.1')
   })
 
   it('exports the ComponentSpec discriminated union covering all kinds', () => {

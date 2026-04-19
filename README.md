@@ -7,13 +7,13 @@ Part of a planned **agent-tools** framework family.
 ## Install
 
 ```bash
-bun add @ericbaruch_gmail/stream-ui
+bun add @baruch-eric/stream-ui
 ```
 
 Import the default styles once at the top of your app (or skip them and style `.sui-*` classes yourself):
 
 ```ts
-import '@ericbaruch_gmail/stream-ui/styles.css'
+import '@baruch-eric/stream-ui/styles.css'
 ```
 
 ## Usage
@@ -25,7 +25,7 @@ import {
   clear,
   type ComponentSpec,
   type ActionEvent,
-} from '@ericbaruch_gmail/stream-ui'
+} from '@baruch-eric/stream-ui'
 
 const stage = document.getElementById('app')!
 
@@ -91,7 +91,7 @@ Layout primitives accept `gap: 'sm' | 'md' | 'lg'`. `row` also accepts `align: '
 **Registry — extend with your own kinds:**
 
 ```ts
-import { register, listKinds } from '@ericbaruch_gmail/stream-ui'
+import { register, listKinds } from '@baruch-eric/stream-ui'
 
 type KanbanCardSpec = {
   kind: 'kanban-card'
@@ -124,7 +124,7 @@ console.log(listKinds())  // ['alert', 'badge', 'button', ..., 'kanban-card']
 Every built-in is a pure function exposed via `builtins.<kind>`. Call them with no framework state if you want:
 
 ```ts
-import { builtins } from '@ericbaruch_gmail/stream-ui'
+import { builtins } from '@baruch-eric/stream-ui'
 
 const buttonEl = builtins.button({ kind: 'button', label: 'Hi', action: 'x' })
 container.appendChild(buttonEl)

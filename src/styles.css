@@ -2,7 +2,7 @@
  * stream-ui default styles
  *
  * Minimal, theme-neutral styling for all built-in component kinds.
- * Import once in your app:  `import '@ericbaruch_gmail/stream-ui/styles.css'`
+ * Import once in your app:  `import '@baruch-eric/stream-ui/styles.css'`
  *
  * Colors use `currentColor` / neutral alpha where possible so the
  * framework inherits your app's color scheme. Components expose a
