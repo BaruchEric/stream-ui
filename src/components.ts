@@ -48,15 +48,51 @@ export function createElement(spec: ComponentSpec, onAction?: ActionHandler): HT
       return el
     }
 
-    // ─── container ────────────────────────────────────────────────────
+    // ─── container & layout ───────────────────────────────────────────
     case 'card': {
       const el = document.createElement('article')
       el.className = 'sui-card'
       const h = document.createElement('h3')
       h.textContent = spec.title
-      const p = document.createElement('p')
-      p.textContent = spec.body
-      el.append(h, p)
+      el.appendChild(h)
+      if (spec.body) {
+        const p = document.createElement('p')
+        p.textContent = spec.body
+        el.appendChild(p)
+      }
+      if (spec.children) {
+        for (const child of spec.children) {
+          el.appendChild(createElement(child, onAction))
+        }
+      }
+      return el
+    }
+
+    case 'stack': {
+      const el = document.createElement('div')
+      el.className = `sui-stack sui-gap-${spec.gap ?? 'md'}`
+      for (const child of spec.children) {
+        el.appendChild(createElement(child, onAction))
+      }
+      return el
+    }
+
+    case 'row': {
+      const el = document.createElement('div')
+      el.className = `sui-row sui-gap-${spec.gap ?? 'md'} sui-align-${spec.align ?? 'start'}`
+      for (const child of spec.children) {
+        el.appendChild(createElement(child, onAction))
+      }
+      return el
+    }
+
+    case 'grid': {
+      const el = document.createElement('div')
+      el.className = `sui-grid sui-gap-${spec.gap ?? 'md'}`
+      el.style.setProperty('--sui-grid-cols', String(spec.columns ?? 2))
+      for (const child of spec.children) {
+        el.appendChild(createElement(child, onAction))
+      }
       return el
     }
 

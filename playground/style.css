@@ -241,18 +241,59 @@ code {
 }
 
 .sui-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   border: 1px solid rgba(127, 127, 127, 0.4);
   border-radius: 0.5rem;
   padding: 0.75rem 1rem;
 }
 
 .sui-card h3 {
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 1rem;
 }
 
-.sui-card p {
+.sui-card > p {
   margin: 0;
+}
+
+/* ─── layout primitives (recursive containers) ────────────────────── */
+
+.sui-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.sui-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.sui-align-start {
+  align-items: flex-start;
+}
+.sui-align-center {
+  align-items: center;
+}
+.sui-align-end {
+  align-items: flex-end;
+}
+
+.sui-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--sui-grid-cols, 2), minmax(0, 1fr));
+}
+
+.sui-gap-sm {
+  gap: 0.25rem;
+}
+.sui-gap-md {
+  gap: 0.75rem;
+}
+.sui-gap-lg {
+  gap: 1.5rem;
 }
 
 .sui-alert {

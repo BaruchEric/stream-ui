@@ -7,7 +7,7 @@ import type { ActionHandler, ComponentSpec } from './types'
 
 export type { ActionEvent, ActionHandler, AgentEvent, ComponentSpec, FormField } from './types'
 
-export const VERSION = '0.2.0'
+export const VERSION = '0.3.0'
 
 export function render(
   spec: ComponentSpec,

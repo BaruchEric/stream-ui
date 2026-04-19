@@ -4,7 +4,7 @@ import { VERSION } from './index'
 
 describe('stream-ui', () => {
   it('exports a version', () => {
-    expect(VERSION).toBe('0.2.0')
+    expect(VERSION).toBe('0.3.0')
   })
 
   it('exports the ComponentSpec discriminated union covering all kinds', () => {
@@ -16,6 +16,13 @@ describe('stream-ui', () => {
       { kind: 'divider' },
       { kind: 'image', src: 'x.png', alt: 'X' },
       { kind: 'card', title: 't', body: 'b' },
+      { kind: 'stack', children: [{ kind: 'text', content: 'inner' }] },
+      { kind: 'row', children: [{ kind: 'badge', content: 'a' }], align: 'center' },
+      {
+        kind: 'grid',
+        children: [{ kind: 'card', title: 'c1', body: '' }],
+        columns: 2,
+      },
       { kind: 'alert', variant: 'info', content: 'note' },
       { kind: 'badge', content: 'New', variant: 'success' },
       { kind: 'spinner', label: 'Loading' },
@@ -37,6 +44,18 @@ describe('stream-ui', () => {
     ]
 
     const kinds = new Set<ComponentKind>(specs.map((s) => s.kind))
-    expect(kinds.size).toBe(20)
+    expect(kinds.size).toBe(23)
+  })
+
+  it('supports nested composition via children', () => {
+    const composite: ComponentSpec = {
+      kind: 'card',
+      title: 'Composed',
+      children: [
+        { kind: 'text', content: 'hello' },
+        { kind: 'row', children: [{ kind: 'button', label: 'A', action: 'a' }] },
+      ],
+    }
+    expect(composite.kind).toBe('card')
   })
 })

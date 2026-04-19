@@ -109,6 +109,52 @@ function paletteSpecs(): ComponentSpec[] {
     { kind: 'button', label: 'Danger', action: 'demo-danger', variant: 'danger' },
     { kind: 'link', label: 'Open repo on GitHub', href: 'https://github.com/BaruchEric/stream-ui' },
     { kind: 'divider' },
+    { kind: 'heading', level: 4, content: 'Composition (nested)' },
+    {
+      kind: 'card',
+      title: 'Card with children',
+      children: [
+        { kind: 'paragraph', content: 'Cards can hold any components, not just text.' },
+        {
+          kind: 'row',
+          gap: 'sm',
+          children: [
+            { kind: 'badge', content: 'NEW', variant: 'success' },
+            { kind: 'badge', content: 'beta', variant: 'warning' },
+            { kind: 'badge', content: 'v0.3', variant: 'default' },
+          ],
+        },
+        {
+          kind: 'row',
+          gap: 'sm',
+          children: [
+            { kind: 'button', label: 'Cancel', action: 'composite-cancel' },
+            { kind: 'button', label: 'Save', action: 'composite-save', variant: 'primary' },
+          ],
+        },
+      ],
+    },
+    {
+      kind: 'stack',
+      gap: 'sm',
+      children: [
+        { kind: 'heading', level: 5, content: 'Vertical stack' },
+        { kind: 'alert', variant: 'info', content: 'Children stacked vertically with sm gap.' },
+        { kind: 'progress', value: 80, label: 'Stack demo' },
+      ],
+    },
+    {
+      kind: 'grid',
+      columns: 2,
+      gap: 'sm',
+      children: [
+        { kind: 'card', title: 'Tile A', body: '2-col grid cell.' },
+        { kind: 'card', title: 'Tile B', body: '2-col grid cell.' },
+        { kind: 'card', title: 'Tile C', body: '2-col grid cell.' },
+        { kind: 'card', title: 'Tile D', body: '2-col grid cell.' },
+      ],
+    },
+    { kind: 'divider' },
     { kind: 'heading', level: 4, content: 'Misc' },
     {
       kind: 'image',
@@ -375,6 +421,58 @@ async function* mockAgent(prompt: string): AsyncGenerator<AgentEvent> {
         kind: 'heading',
         level: 2,
         content: extractAfter(prompt, ['heading', 'title']) || 'Heading',
+      },
+    }
+  } else if (lower.includes('stack') || lower.includes('vertical')) {
+    yield { type: 'thinking', text: 'Component → stack' }
+    await sleep(200)
+    yield {
+      type: op,
+      spec: {
+        kind: 'stack',
+        gap: 'sm',
+        children: [
+          { kind: 'heading', level: 4, content: 'Stacked' },
+          { kind: 'paragraph', content: 'Vertical layout primitive.' },
+          { kind: 'button', label: 'Action', action: 'stack-demo' },
+        ],
+      },
+    }
+  } else if (
+    lower.includes('row') ||
+    lower.includes('horizontal') ||
+    lower.includes('side by side')
+  ) {
+    yield { type: 'thinking', text: 'Component → row' }
+    await sleep(200)
+    yield {
+      type: op,
+      spec: {
+        kind: 'row',
+        gap: 'sm',
+        align: 'center',
+        children: [
+          { kind: 'badge', content: 'one' },
+          { kind: 'badge', content: 'two', variant: 'success' },
+          { kind: 'badge', content: 'three', variant: 'warning' },
+        ],
+      },
+    }
+  } else if (lower.includes('grid')) {
+    yield { type: 'thinking', text: 'Component → grid (2-col)' }
+    await sleep(200)
+    yield {
+      type: op,
+      spec: {
+        kind: 'grid',
+        columns: 2,
+        gap: 'sm',
+        children: [
+          { kind: 'card', title: 'A', body: 'Cell' },
+          { kind: 'card', title: 'B', body: 'Cell' },
+          { kind: 'card', title: 'C', body: 'Cell' },
+          { kind: 'card', title: 'D', body: 'Cell' },
+        ],
       },
     }
   } else if (lower.includes('paragraph')) {

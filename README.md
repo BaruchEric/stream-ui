@@ -28,11 +28,11 @@ render(spec, stage, (event: ActionEvent) => {
 })
 ```
 
-### Component kinds (v0.2)
+### Component kinds (v0.3)
 
 **Display** — `text` · `heading` · `paragraph` · `code` · `divider` · `image`
 
-**Container** — `card`
+**Container & layout** — `card` (now accepts `children`) · `stack` · `row` · `grid`
 
 **Feedback** — `alert` (info / success / warning / error) · `badge` · `spinner` · `progress`
 
@@ -43,6 +43,29 @@ render(spec, stage, (event: ActionEvent) => {
 **Action** — `button` (default / primary / danger) · `link`
 
 Inputs and actions fire `ActionEvent { action, payload? }` through the optional handler — feed those back into your agent loop to close the human ↔ AI ↔ UI loop.
+
+### Composition
+
+`card`, `stack`, `row`, and `grid` recursively render `children: ComponentSpec[]`, so the agent can compose primitives into arbitrary trees:
+
+```ts
+render({
+  kind: 'card',
+  title: 'Confirm',
+  children: [
+    { kind: 'paragraph', content: 'Are you sure?' },
+    {
+      kind: 'row', gap: 'sm',
+      children: [
+        { kind: 'button', label: 'Cancel', action: 'cancel' },
+        { kind: 'button', label: 'OK', action: 'ok', variant: 'primary' },
+      ],
+    },
+  ],
+}, stage, onAction)
+```
+
+Layout primitives accept `gap: 'sm' | 'md' | 'lg'`. `row` also accepts `align: 'start' | 'center' | 'end'`. `grid` accepts `columns: number`.
 
 ### API
 

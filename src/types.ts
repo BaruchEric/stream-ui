@@ -1,3 +1,5 @@
+export type Gap = 'sm' | 'md' | 'lg'
+
 export type AlertVariant = 'info' | 'success' | 'warning' | 'error'
 export type BadgeVariant = 'default' | 'success' | 'warning' | 'error'
 export type ButtonVariant = 'default' | 'primary' | 'danger'
@@ -24,8 +26,11 @@ export type ComponentSpec =
   | { kind: 'code'; content: string; language?: string }
   | { kind: 'divider' }
   | { kind: 'image'; src: string; alt: string; width?: number; height?: number }
-  // ─── container ────────────────────────────────────────────────────────
-  | { kind: 'card'; title: string; body: string }
+  // ─── container & layout ───────────────────────────────────────────────
+  | { kind: 'card'; title: string; body?: string; children?: ComponentSpec[] }
+  | { kind: 'stack'; children: ComponentSpec[]; gap?: Gap }
+  | { kind: 'row'; children: ComponentSpec[]; gap?: Gap; align?: 'start' | 'center' | 'end' }
+  | { kind: 'grid'; children: ComponentSpec[]; columns?: number; gap?: Gap }
   // ─── feedback ─────────────────────────────────────────────────────────
   | { kind: 'alert'; variant?: AlertVariant; content: string }
   | { kind: 'badge'; content: string; variant?: BadgeVariant }
