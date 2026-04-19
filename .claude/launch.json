@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "stream-ui-playground",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "playground"],
+      "port": 5173
+    }
+  ]
+}

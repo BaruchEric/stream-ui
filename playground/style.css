@@ -1,0 +1,50 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+header {
+  margin-bottom: 2rem;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+}
+
+header p {
+  margin: 0;
+  opacity: 0.75;
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#app {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px dashed currentColor;
+  border-radius: 0.5rem;
+  white-space: pre-wrap;
+  min-height: 4rem;
+}

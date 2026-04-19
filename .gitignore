@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.vitest-cache/
+
+.env
+.env.local
+.env.*.local
+
+*.log
+.DS_Store
+.idea/
+.vscode/
