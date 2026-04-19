@@ -9,12 +9,30 @@
   <body>
     <header>
       <h1>stream-ui</h1>
-      <p>Flexible UI framework that streams UI to the user, guided by an AI agent.</p>
+      <p>Human → Agent → Streamed UI. Try: <code>make a button</code>, <code>build a form</code>, <code>show a list</code>, <code>card</code>.</p>
     </header>
-    <main>
-      <button id="start" type="button">Start mock agent stream</button>
-      <section id="app" aria-live="polite"></section>
-    </main>
+
+    <div class="grid">
+      <section class="region region-chat">
+        <h2>CHAT</h2>
+        <div id="chat-log" class="scroll" aria-live="polite"></div>
+        <form id="chat-form" class="chat-input">
+          <input id="chat-input" type="text" placeholder="Ask the agent…" autocomplete="off" autofocus />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+
+      <section class="region region-ai">
+        <h2>AI</h2>
+        <div id="ai-stream" class="scroll" aria-live="polite"></div>
+      </section>
+
+      <section class="region region-ui">
+        <h2>UI</h2>
+        <div id="ui-stage" class="scroll"></div>
+      </section>
+    </div>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
