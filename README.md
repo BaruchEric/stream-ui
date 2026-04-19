@@ -7,13 +7,19 @@ Part of a planned **agent-tools** framework family.
 ## Install
 
 ```bash
-bun add stream-ui
+bun add @ericbaruch_gmail/stream-ui
 ```
 
 ## Usage
 
 ```ts
-import { render, append, clear, type ComponentSpec, type ActionEvent } from 'stream-ui'
+import {
+  render,
+  append,
+  clear,
+  type ComponentSpec,
+  type ActionEvent,
+} from '@ericbaruch_gmail/stream-ui'
 
 const stage = document.getElementById('app')!
 
@@ -79,7 +85,7 @@ Layout primitives accept `gap: 'sm' | 'md' | 'lg'`. `row` also accepts `align: '
 **Registry — extend with your own kinds:**
 
 ```ts
-import { register, listKinds } from 'stream-ui'
+import { register, listKinds } from '@ericbaruch_gmail/stream-ui'
 
 type KanbanCardSpec = {
   kind: 'kanban-card'
@@ -112,7 +118,7 @@ console.log(listKinds())  // ['alert', 'badge', 'button', ..., 'kanban-card']
 Every built-in is a pure function exposed via `builtins.<kind>`. Call them with no framework state if you want:
 
 ```ts
-import { builtins } from 'stream-ui'
+import { builtins } from '@ericbaruch_gmail/stream-ui'
 
 const buttonEl = builtins.button({ kind: 'button', label: 'Hi', action: 'x' })
 container.appendChild(buttonEl)
