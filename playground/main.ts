@@ -237,6 +237,268 @@ function extractAfter(prompt: string, keywords: string[]): string | null {
   return null
 }
 
+// Table of keyword-triggered component demos. The mock agent scans the
+// prompt in order and yields the first matching route's spec. Order
+// matters: more-specific keywords must appear before broader ones (e.g.
+// `textarea` before `input`). Each route's `thinking` is the AI-stream
+// line; `spec` builds the ComponentSpec (or AnySpec for custom kinds).
+type Route = {
+  keywords: string[]
+  thinking: string | ((prompt: string, lower: string) => string)
+  spec: (prompt: string, lower: string) => ComponentSpec | AnySpec
+}
+
+const keywordRoutes: Route[] = [
+  {
+    keywords: ['textarea'],
+    thinking: 'Component → textarea',
+    spec: (p) => ({
+      kind: 'textarea',
+      name: 'demo',
+      label: extractAfter(p, ['textarea']) || 'Notes',
+      placeholder: 'Write something',
+      rows: 4,
+      action: 'demo-textarea',
+    }),
+  },
+  {
+    keywords: ['checkbox', 'toggle'],
+    thinking: 'Component → checkbox',
+    spec: (p) => ({
+      kind: 'checkbox',
+      name: 'demo',
+      label: extractAfter(p, ['checkbox', 'toggle']) || 'Enable demo',
+      action: 'demo-checkbox',
+    }),
+  },
+  {
+    keywords: ['select', 'dropdown'],
+    thinking: 'Component → select',
+    spec: (p) => ({
+      kind: 'select',
+      name: 'demo',
+      label: extractAfter(p, ['select', 'dropdown']) || 'Pick one',
+      options: [
+        { value: 'a', label: 'Option A' },
+        { value: 'b', label: 'Option B' },
+        { value: 'c', label: 'Option C' },
+      ],
+      action: 'demo-select',
+    }),
+  },
+  {
+    keywords: ['text field', 'textbox', 'input'],
+    thinking: 'Component → input',
+    spec: (p) => ({
+      kind: 'input',
+      name: 'demo',
+      label: extractAfter(p, ['input', 'textbox', 'text field']) || 'Demo input',
+      placeholder: 'Type something',
+      action: 'demo-input',
+    }),
+  },
+  {
+    keywords: ['form'],
+    thinking: 'Component → form (name + email)',
+    spec: () => ({
+      kind: 'form',
+      submitLabel: 'Submit',
+      fields: [
+        { name: 'name', label: 'Name', type: 'text', placeholder: 'Your name' },
+        { name: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com' },
+      ],
+    }),
+  },
+  {
+    keywords: ['button'],
+    thinking: 'Component → button',
+    spec: (p, lower) => {
+      const variant = lower.includes('danger')
+        ? 'danger'
+        : lower.includes('primary')
+          ? 'primary'
+          : 'default'
+      return {
+        kind: 'button',
+        label: extractAfter(p, ['button']) || 'Click me',
+        action: 'demo-click',
+        variant,
+      }
+    },
+  },
+  {
+    keywords: ['link'],
+    thinking: 'Component → link',
+    spec: (p) => ({
+      kind: 'link',
+      label: extractAfter(p, ['link']) || 'Open GitHub',
+      href: 'https://github.com/BaruchEric/stream-ui',
+    }),
+  },
+  {
+    keywords: ['table'],
+    thinking: 'Component → table',
+    spec: () => ({
+      kind: 'table',
+      headers: ['Name', 'Value'],
+      rows: [
+        ['Alpha', '1'],
+        ['Beta', '2'],
+        ['Gamma', '3'],
+      ],
+    }),
+  },
+  {
+    keywords: ['list'],
+    thinking: 'Component → list',
+    spec: (_p, lower) => ({
+      kind: 'list',
+      items: ['First item', 'Second item', 'Third item'],
+      ordered: lower.includes('numbered') || lower.includes('ordered') || lower.includes('1.'),
+    }),
+  },
+  {
+    keywords: ['card'],
+    thinking: 'Component → card',
+    spec: (p) => ({
+      kind: 'card',
+      title: extractAfter(p, ['card']) || 'Generated card',
+      body: 'This card was rendered by the agent.',
+    }),
+  },
+  {
+    keywords: ['alert', 'warning', 'error'],
+    thinking: (p) => `Component → alert (${detectAlertVariant(p)})`,
+    spec: (p) => {
+      const variant = detectAlertVariant(p)
+      return {
+        kind: 'alert',
+        variant,
+        content: extractAfter(p, ['alert', 'warning', 'error', 'message']) || `${variant} alert`,
+      }
+    },
+  },
+  {
+    keywords: ['badge', 'tag'],
+    thinking: 'Component → badge',
+    spec: (p) => ({
+      kind: 'badge',
+      content: extractAfter(p, ['badge', 'tag']) || 'New',
+    }),
+  },
+  {
+    keywords: ['spinner', 'loading'],
+    thinking: 'Component → spinner',
+    spec: () => ({ kind: 'spinner', label: 'Loading…' }),
+  },
+  {
+    keywords: ['progress'],
+    thinking: 'Component → progress (50%)',
+    spec: () => ({ kind: 'progress', value: 50, label: 'Working' }),
+  },
+  {
+    keywords: ['image', 'picture'],
+    thinking: 'Component → image',
+    spec: () => ({
+      kind: 'image',
+      src: 'https://placehold.co/400x200/444/fff?text=stream-ui',
+      alt: 'Placeholder image',
+    }),
+  },
+  {
+    keywords: ['divider', 'separator'],
+    thinking: 'Component → divider',
+    spec: () => ({ kind: 'divider' }),
+  },
+  {
+    keywords: ['code'],
+    thinking: 'Component → code',
+    spec: (p) => ({
+      kind: 'code',
+      content: extractAfter(p, ['code']) || "console.log('hi')",
+      language: 'typescript',
+    }),
+  },
+  {
+    keywords: ['heading', 'title'],
+    thinking: 'Component → heading',
+    spec: (p) => ({
+      kind: 'heading',
+      level: 2,
+      content: extractAfter(p, ['heading', 'title']) || 'Heading',
+    }),
+  },
+  {
+    keywords: ['stack', 'vertical'],
+    thinking: 'Component → stack',
+    spec: () => ({
+      kind: 'stack',
+      gap: 'sm',
+      children: [
+        { kind: 'heading', level: 4, content: 'Stacked' },
+        { kind: 'paragraph', content: 'Vertical layout primitive.' },
+        { kind: 'button', label: 'Action', action: 'stack-demo' },
+      ],
+    }),
+  },
+  {
+    keywords: ['row', 'horizontal', 'side by side'],
+    thinking: 'Component → row',
+    spec: () => ({
+      kind: 'row',
+      gap: 'sm',
+      align: 'center',
+      children: [
+        { kind: 'badge', content: 'one' },
+        { kind: 'badge', content: 'two', variant: 'success' },
+        { kind: 'badge', content: 'three', variant: 'warning' },
+      ],
+    }),
+  },
+  {
+    keywords: ['kanban'],
+    thinking: () =>
+      `Component → kanban-card (custom-registered, ${listKinds().length} kinds total)`,
+    spec: (p, lower) => {
+      const status: 'todo' | 'doing' | 'done' = lower.includes('done')
+        ? 'done'
+        : lower.includes('doing') || lower.includes('progress')
+          ? 'doing'
+          : 'todo'
+      return {
+        kind: 'kanban-card',
+        title: extractAfter(p, ['kanban']) || 'Implement feature X',
+        status,
+        assignee: 'eric',
+        action: 'kanban-click',
+      } as AnySpec
+    },
+  },
+  {
+    keywords: ['grid'],
+    thinking: 'Component → grid (2-col)',
+    spec: () => ({
+      kind: 'grid',
+      columns: 2,
+      gap: 'sm',
+      children: [
+        { kind: 'card', title: 'A', body: 'Cell' },
+        { kind: 'card', title: 'B', body: 'Cell' },
+        { kind: 'card', title: 'C', body: 'Cell' },
+        { kind: 'card', title: 'D', body: 'Cell' },
+      ],
+    }),
+  },
+  {
+    keywords: ['paragraph'],
+    thinking: 'Component → paragraph',
+    spec: (p) => ({
+      kind: 'paragraph',
+      content: extractAfter(p, ['paragraph']) || 'A paragraph of text.',
+    }),
+  },
+]
+
 async function* mockAgent(prompt: string): AsyncGenerator<AgentEvent> {
   yield { type: 'thinking', text: 'Parsing prompt…' }
   await sleep(200)
@@ -244,8 +506,8 @@ async function* mockAgent(prompt: string): AsyncGenerator<AgentEvent> {
   await sleep(250)
 
   const lower = prompt.toLowerCase()
-  const append_ = lower.includes('add') || lower.includes('append') || lower.includes('also')
-  const op = (append_ ? 'append' : 'render') as 'append' | 'render'
+  const shouldAppend = lower.includes('add') || lower.includes('append') || lower.includes('also')
+  const op = (shouldAppend ? 'append' : 'render') as 'append' | 'render'
 
   // Palette / show all
   if (
@@ -275,292 +537,21 @@ async function* mockAgent(prompt: string): AsyncGenerator<AgentEvent> {
     return
   }
 
-  // Order matters: more specific keywords first
-  if (lower.includes('textarea')) {
-    yield { type: 'thinking', text: 'Component → textarea' }
+  // Scan routes in order; first keyword hit wins.
+  for (const route of keywordRoutes) {
+    if (!route.keywords.some((k) => lower.includes(k))) continue
+    const text =
+      typeof route.thinking === 'function' ? route.thinking(prompt, lower) : route.thinking
+    yield { type: 'thinking', text }
     await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'textarea',
-        name: 'demo',
-        label: extractAfter(prompt, ['textarea']) || 'Notes',
-        placeholder: 'Write something',
-        rows: 4,
-        action: 'demo-textarea',
-      },
-    }
-  } else if (lower.includes('checkbox') || lower.includes('toggle')) {
-    yield { type: 'thinking', text: 'Component → checkbox' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'checkbox',
-        name: 'demo',
-        label: extractAfter(prompt, ['checkbox', 'toggle']) || 'Enable demo',
-        action: 'demo-checkbox',
-      },
-    }
-  } else if (lower.includes('select') || lower.includes('dropdown')) {
-    yield { type: 'thinking', text: 'Component → select' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'select',
-        name: 'demo',
-        label: extractAfter(prompt, ['select', 'dropdown']) || 'Pick one',
-        options: [
-          { value: 'a', label: 'Option A' },
-          { value: 'b', label: 'Option B' },
-          { value: 'c', label: 'Option C' },
-        ],
-        action: 'demo-select',
-      },
-    }
-  } else if (lower.includes('text field') || lower.includes('textbox') || lower.includes('input')) {
-    yield { type: 'thinking', text: 'Component → input' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'input',
-        name: 'demo',
-        label: extractAfter(prompt, ['input', 'textbox', 'text field']) || 'Demo input',
-        placeholder: 'Type something',
-        action: 'demo-input',
-      },
-    }
-  } else if (lower.includes('form')) {
-    yield { type: 'thinking', text: 'Component → form (name + email)' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'form',
-        submitLabel: 'Submit',
-        fields: [
-          { name: 'name', label: 'Name', type: 'text', placeholder: 'Your name' },
-          { name: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com' },
-        ],
-      },
-    }
-  } else if (lower.includes('button')) {
-    yield { type: 'thinking', text: 'Component → button' }
-    await sleep(200)
-    const variant = lower.includes('danger')
-      ? 'danger'
-      : lower.includes('primary')
-        ? 'primary'
-        : 'default'
-    yield {
-      type: op,
-      spec: {
-        kind: 'button',
-        label: extractAfter(prompt, ['button']) || 'Click me',
-        action: 'demo-click',
-        variant,
-      },
-    }
-  } else if (lower.includes('link')) {
-    yield { type: 'thinking', text: 'Component → link' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'link',
-        label: extractAfter(prompt, ['link']) || 'Open GitHub',
-        href: 'https://github.com/BaruchEric/stream-ui',
-      },
-    }
-  } else if (lower.includes('table')) {
-    yield { type: 'thinking', text: 'Component → table' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'table',
-        headers: ['Name', 'Value'],
-        rows: [
-          ['Alpha', '1'],
-          ['Beta', '2'],
-          ['Gamma', '3'],
-        ],
-      },
-    }
-  } else if (lower.includes('list')) {
-    yield { type: 'thinking', text: 'Component → list' }
-    await sleep(200)
-    const ordered = lower.includes('numbered') || lower.includes('ordered') || lower.includes('1.')
-    yield {
-      type: op,
-      spec: { kind: 'list', items: ['First item', 'Second item', 'Third item'], ordered },
-    }
-  } else if (lower.includes('card')) {
-    yield { type: 'thinking', text: 'Component → card' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'card',
-        title: extractAfter(prompt, ['card']) || 'Generated card',
-        body: 'This card was rendered by the agent.',
-      },
-    }
-  } else if (lower.includes('alert') || lower.includes('warning') || lower.includes('error')) {
-    const variant = detectAlertVariant(prompt)
-    yield { type: 'thinking', text: `Component → alert (${variant})` }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'alert',
-        variant,
-        content:
-          extractAfter(prompt, ['alert', 'warning', 'error', 'message']) || `${variant} alert`,
-      },
-    }
-  } else if (lower.includes('badge') || lower.includes('tag')) {
-    yield { type: 'thinking', text: 'Component → badge' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: { kind: 'badge', content: extractAfter(prompt, ['badge', 'tag']) || 'New' },
-    }
-  } else if (lower.includes('spinner') || lower.includes('loading')) {
-    yield { type: 'thinking', text: 'Component → spinner' }
-    await sleep(200)
-    yield { type: op, spec: { kind: 'spinner', label: 'Loading…' } }
-  } else if (lower.includes('progress')) {
-    yield { type: 'thinking', text: 'Component → progress (50%)' }
-    await sleep(200)
-    yield { type: op, spec: { kind: 'progress', value: 50, label: 'Working' } }
-  } else if (lower.includes('image') || lower.includes('picture')) {
-    yield { type: 'thinking', text: 'Component → image' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'image',
-        src: 'https://placehold.co/400x200/444/fff?text=stream-ui',
-        alt: 'Placeholder image',
-      },
-    }
-  } else if (lower.includes('divider') || lower.includes('separator')) {
-    yield { type: 'thinking', text: 'Component → divider' }
-    await sleep(200)
-    yield { type: op, spec: { kind: 'divider' } }
-  } else if (lower.includes('code')) {
-    yield { type: 'thinking', text: 'Component → code' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'code',
-        content: extractAfter(prompt, ['code']) || "console.log('hi')",
-        language: 'typescript',
-      },
-    }
-  } else if (lower.includes('heading') || lower.includes('title')) {
-    yield { type: 'thinking', text: 'Component → heading' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'heading',
-        level: 2,
-        content: extractAfter(prompt, ['heading', 'title']) || 'Heading',
-      },
-    }
-  } else if (lower.includes('stack') || lower.includes('vertical')) {
-    yield { type: 'thinking', text: 'Component → stack' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'stack',
-        gap: 'sm',
-        children: [
-          { kind: 'heading', level: 4, content: 'Stacked' },
-          { kind: 'paragraph', content: 'Vertical layout primitive.' },
-          { kind: 'button', label: 'Action', action: 'stack-demo' },
-        ],
-      },
-    }
-  } else if (
-    lower.includes('row') ||
-    lower.includes('horizontal') ||
-    lower.includes('side by side')
-  ) {
-    yield { type: 'thinking', text: 'Component → row' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'row',
-        gap: 'sm',
-        align: 'center',
-        children: [
-          { kind: 'badge', content: 'one' },
-          { kind: 'badge', content: 'two', variant: 'success' },
-          { kind: 'badge', content: 'three', variant: 'warning' },
-        ],
-      },
-    }
-  } else if (lower.includes('kanban')) {
-    yield {
-      type: 'thinking',
-      text: `Component → kanban-card (custom-registered, ${listKinds().length} kinds total)`,
-    }
-    await sleep(200)
-    const status: 'todo' | 'doing' | 'done' = lower.includes('done')
-      ? 'done'
-      : lower.includes('doing') || lower.includes('progress')
-        ? 'doing'
-        : 'todo'
-    yield {
-      type: op,
-      spec: {
-        kind: 'kanban-card',
-        title: extractAfter(prompt, ['kanban']) || 'Implement feature X',
-        status,
-        assignee: 'eric',
-        action: 'kanban-click',
-      } as AnySpec,
-    }
-  } else if (lower.includes('grid')) {
-    yield { type: 'thinking', text: 'Component → grid (2-col)' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'grid',
-        columns: 2,
-        gap: 'sm',
-        children: [
-          { kind: 'card', title: 'A', body: 'Cell' },
-          { kind: 'card', title: 'B', body: 'Cell' },
-          { kind: 'card', title: 'C', body: 'Cell' },
-          { kind: 'card', title: 'D', body: 'Cell' },
-        ],
-      },
-    }
-  } else if (lower.includes('paragraph')) {
-    yield { type: 'thinking', text: 'Component → paragraph' }
-    await sleep(200)
-    yield {
-      type: op,
-      spec: {
-        kind: 'paragraph',
-        content: extractAfter(prompt, ['paragraph']) || 'A paragraph of text.',
-      },
-    }
-  } else {
-    yield { type: 'thinking', text: 'No component match — echoing as text' }
-    await sleep(150)
-    yield { type: op, spec: { kind: 'text', content: prompt } }
+    yield { type: op, spec: route.spec(prompt, lower) }
+    return
   }
+
+  // Fallback — no keyword matched.
+  yield { type: 'thinking', text: 'No component match — echoing as text' }
+  await sleep(150)
+  yield { type: op, spec: { kind: 'text', content: prompt } }
 }
 
 chatForm.addEventListener('submit', async (e) => {
@@ -572,22 +563,24 @@ chatForm.addEventListener('submit', async (e) => {
   chatInput.disabled = true
   sendBtn.disabled = true
 
-  for await (const event of mockAgent(prompt)) {
-    if (event.type === 'thinking') {
-      pushAI(event.text, 'thinking')
-    } else if (event.type === 'render') {
-      pushAI(`→ render ${event.spec.kind}`)
-      render(event.spec, uiStage, onAction)
-    } else if (event.type === 'append') {
-      pushAI(`→ append ${event.spec.kind}`)
-      append(event.spec, uiStage, onAction)
+  try {
+    for await (const event of mockAgent(prompt)) {
+      if (event.type === 'thinking') {
+        pushAI(event.text, 'thinking')
+      } else if (event.type === 'render') {
+        pushAI(`→ render ${event.spec.kind}`)
+        render(event.spec, uiStage, onAction)
+      } else if (event.type === 'append') {
+        pushAI(`→ append ${event.spec.kind}`)
+        append(event.spec, uiStage, onAction)
+      }
     }
+    pushChat('agent', 'Done.')
+  } finally {
+    chatInput.disabled = false
+    sendBtn.disabled = false
+    chatInput.focus()
   }
-
-  pushChat('agent', 'Done.')
-  chatInput.disabled = false
-  sendBtn.disabled = false
-  chatInput.focus()
 })
 
 // Initial state
