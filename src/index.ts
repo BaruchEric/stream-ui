@@ -15,7 +15,7 @@
  */
 
 import { builtins } from './components'
-import { register } from './registry'
+import { createElement, register } from './registry'
 import type { ActionHandler, AnySpec, ComponentSpec, Renderer } from './types'
 
 // Auto-register every built-in on module load. Consumers can call
@@ -58,8 +58,6 @@ export type {
 } from './types'
 
 // ─── high-level convenience wrappers ────────────────────────────────────
-import { createElement } from './registry'
-
 export function render(
   spec: ComponentSpec | AnySpec,
   container: HTMLElement,

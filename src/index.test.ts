@@ -34,17 +34,15 @@ describe('stream-ui', () => {
       { kind: 'link', label: 'Open', href: 'https://example.com' },
     ]
     const kinds = new Set<ComponentKind>(specs.map((s) => s.kind))
-    expect(kinds.size).toBe(23)
+    expect(kinds.size).toBe(specs.length)
   })
 })
 
 describe('registry', () => {
-  it('auto-registers all 23 built-ins on import', () => {
+  it('auto-registers every built-in renderer on import', () => {
     const kinds = listKinds()
-    expect(kinds).toContain('button')
-    expect(kinds).toContain('card')
-    expect(kinds).toContain('grid')
-    expect(kinds.length).toBeGreaterThanOrEqual(23)
+    const builtinKinds = Object.keys(builtins)
+    for (const kind of builtinKinds) expect(kinds).toContain(kind)
   })
 
   it('exposes built-ins as a typed map for direct invocation', () => {

@@ -11,6 +11,18 @@ import type { ComponentKind, Renderer, SpecOf } from './types'
 //   container.appendChild(builtins.button({ kind: 'button', label: 'Hi', action: 'x' }))
 type BuiltinRenderers = { [K in ComponentKind]: Renderer<SpecOf<K>> }
 
+// Wraps a form control in the standard `<label><span>text</span>…</label>`
+// scaffold used by input/textarea/select.
+function createLabeledControl(labelText: string, control: HTMLElement): HTMLLabelElement {
+  const wrap = document.createElement('label')
+  wrap.className = 'sui-input-wrap'
+  const span = document.createElement('span')
+  span.className = 'sui-input-label'
+  span.textContent = labelText
+  wrap.append(span, control)
+  return wrap
+}
+
 export const builtins: BuiltinRenderers = {
   // ─── display ────────────────────────────────────────────────────────
   text: (spec) => {
@@ -204,11 +216,6 @@ export const builtins: BuiltinRenderers = {
 
   // ─── input ──────────────────────────────────────────────────────────
   input: (spec, onAction) => {
-    const wrap = document.createElement('label')
-    wrap.className = 'sui-input-wrap'
-    const labelText = document.createElement('span')
-    labelText.className = 'sui-input-label'
-    labelText.textContent = spec.label
     const input = document.createElement('input')
     input.className = 'sui-input'
     input.name = spec.name
@@ -221,16 +228,10 @@ export const builtins: BuiltinRenderers = {
         onAction?.({ action, payload: { name: spec.name, value: input.value } })
       })
     }
-    wrap.append(labelText, input)
-    return wrap
+    return createLabeledControl(spec.label, input)
   },
 
   textarea: (spec, onAction) => {
-    const wrap = document.createElement('label')
-    wrap.className = 'sui-input-wrap'
-    const labelText = document.createElement('span')
-    labelText.className = 'sui-input-label'
-    labelText.textContent = spec.label
     const ta = document.createElement('textarea')
     ta.className = 'sui-textarea'
     ta.name = spec.name
@@ -243,16 +244,10 @@ export const builtins: BuiltinRenderers = {
         onAction?.({ action, payload: { name: spec.name, value: ta.value } })
       })
     }
-    wrap.append(labelText, ta)
-    return wrap
+    return createLabeledControl(spec.label, ta)
   },
 
   select: (spec, onAction) => {
-    const wrap = document.createElement('label')
-    wrap.className = 'sui-input-wrap'
-    const labelText = document.createElement('span')
-    labelText.className = 'sui-input-label'
-    labelText.textContent = spec.label
     const sel = document.createElement('select')
     sel.className = 'sui-select'
     sel.name = spec.name
@@ -269,8 +264,7 @@ export const builtins: BuiltinRenderers = {
         onAction?.({ action, payload: { name: spec.name, value: sel.value } })
       })
     }
-    wrap.append(labelText, sel)
-    return wrap
+    return createLabeledControl(spec.label, sel)
   },
 
   checkbox: (spec, onAction) => {
@@ -298,18 +292,7 @@ export const builtins: BuiltinRenderers = {
     const el = document.createElement('form')
     el.className = 'sui-form'
     for (const field of spec.fields) {
-      const wrap = document.createElement('label')
-      wrap.className = 'sui-input-wrap'
-      const labelText = document.createElement('span')
-      labelText.className = 'sui-input-label'
-      labelText.textContent = field.label
-      const input = document.createElement('input')
-      input.className = 'sui-input'
-      input.name = field.name
-      input.type = field.type
-      if (field.placeholder) input.placeholder = field.placeholder
-      wrap.append(labelText, input)
-      el.appendChild(wrap)
+      el.appendChild(builtins.input({ kind: 'input', ...field }, onAction))
     }
     const submit = document.createElement('button')
     submit.type = 'submit'
@@ -342,7 +325,7 @@ export const builtins: BuiltinRenderers = {
     el.className = 'sui-link'
     el.href = spec.href
     el.textContent = spec.label
-    if (/^https?:\/\//.test(spec.href)) {
+    if (/^(https?:)?\/\//.test(spec.href)) {
       el.target = '_blank'
       el.rel = 'noopener noreferrer'
     }
