@@ -1,3 +1,4 @@
+import '../src/styles.css'
 import {
   type ActionEvent,
   type ActionHandler,

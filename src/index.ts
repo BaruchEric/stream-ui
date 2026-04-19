@@ -26,7 +26,7 @@ for (const [kind, renderer] of Object.entries(builtins) as Array<[string, Render
   register(kind, renderer)
 }
 
-export const VERSION = '0.5.0'
+export const VERSION = '0.6.0'
 
 // ─── re-exports ─────────────────────────────────────────────────────────
 export { builtins } from './components'

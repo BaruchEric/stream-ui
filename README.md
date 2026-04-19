@@ -10,6 +10,12 @@ Part of a planned **agent-tools** framework family.
 bun add @ericbaruch_gmail/stream-ui
 ```
 
+Import the default styles once at the top of your app (or skip them and style `.sui-*` classes yourself):
+
+```ts
+import '@ericbaruch_gmail/stream-ui/styles.css'
+```
+
 ## Usage
 
 ```ts
@@ -34,7 +40,7 @@ render(spec, stage, (event: ActionEvent) => {
 })
 ```
 
-### Component kinds (v0.3)
+### Component kinds
 
 **Display** — `text` · `heading` · `paragraph` · `code` · `divider` · `image`
 
