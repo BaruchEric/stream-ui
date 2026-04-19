@@ -499,6 +499,63 @@ const keywordRoutes: Route[] = [
   },
 ]
 
+// ─── real LLM client (talks to playground/server.ts via SSE) ────────────
+async function* realAgent(prompt: string): AsyncGenerator<AgentEvent> {
+  let response: Response
+  try {
+    response = await fetch('/api/agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    })
+  } catch (err) {
+    throw new Error(`network: ${err instanceof Error ? err.message : String(err)}`)
+  }
+  if (!response.ok || !response.body) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let split = buffer.indexOf('\n\n')
+    while (split !== -1) {
+      const chunk = buffer.slice(0, split)
+      buffer = buffer.slice(split + 2)
+      split = buffer.indexOf('\n\n')
+      if (!chunk.startsWith('data:')) continue
+      const payload = chunk.slice(chunk.indexOf(':') + 1).trim()
+      try {
+        const event = JSON.parse(payload) as {
+          type: string
+          text?: string
+          spec?: ComponentSpec | AnySpec
+          error?: string
+        }
+        if (event.type === 'thinking' && event.text) {
+          yield { type: 'thinking', text: event.text }
+        } else if (event.type === 'render' && event.spec) {
+          yield { type: 'render', spec: event.spec }
+        } else if (event.type === 'append' && event.spec) {
+          yield { type: 'append', spec: event.spec }
+        } else if (event.type === 'error') {
+          throw new Error(event.error ?? 'agent error')
+        } else if (event.type === 'done') {
+          return
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.startsWith('agent error')) throw err
+        console.warn('[playground] bad SSE payload:', payload, err)
+      }
+    }
+  }
+}
+
 async function* mockAgent(prompt: string): AsyncGenerator<AgentEvent> {
   yield { type: 'thinking', text: 'Parsing prompt…' }
   await sleep(200)
@@ -554,6 +611,24 @@ async function* mockAgent(prompt: string): AsyncGenerator<AgentEvent> {
   yield { type: op, spec: { kind: 'text', content: prompt } }
 }
 
+// Try the real LLM first; if the server isn't running or the key isn't
+// configured, fall back to the keyword-routed mock so the playground
+// still works offline. The AGENT env flag lets you pin one or the other.
+type AgentMode = 'auto' | 'llm' | 'mock'
+const agentMode: AgentMode = (import.meta.env.VITE_AGENT_MODE as AgentMode) ?? 'auto'
+let realAvailable = agentMode !== 'mock'
+
+async function pingServer(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/health')
+    if (!res.ok) return false
+    const info = (await res.json()) as { hasApiKey?: boolean }
+    return Boolean(info.hasApiKey)
+  } catch {
+    return false
+  }
+}
+
 chatForm.addEventListener('submit', async (e) => {
   e.preventDefault()
   const prompt = chatInput.value.trim()
@@ -563,17 +638,45 @@ chatForm.addEventListener('submit', async (e) => {
   chatInput.disabled = true
   sendBtn.disabled = true
 
-  try {
+  const runMock = async () => {
     for await (const event of mockAgent(prompt)) {
-      if (event.type === 'thinking') {
-        pushAI(event.text, 'thinking')
-      } else if (event.type === 'render') {
+      if (event.type === 'thinking') pushAI(event.text, 'thinking')
+      else if (event.type === 'render') {
         pushAI(`→ render ${event.spec.kind}`)
         render(event.spec, uiStage, onAction)
       } else if (event.type === 'append') {
         pushAI(`→ append ${event.spec.kind}`)
         append(event.spec, uiStage, onAction)
       }
+    }
+  }
+
+  try {
+    if (realAvailable) {
+      try {
+        for await (const event of realAgent(prompt)) {
+          if (event.type === 'thinking') pushAI(event.text, 'thinking')
+          else if (event.type === 'render') {
+            pushAI(`→ render ${event.spec.kind}`)
+            render(event.spec, uiStage, onAction)
+          } else if (event.type === 'append') {
+            pushAI(`→ append ${event.spec.kind}`)
+            append(event.spec, uiStage, onAction)
+          }
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        if (agentMode === 'llm') {
+          pushAI(`agent error: ${msg}`, 'action')
+          pushChat('system', `[llm error] ${msg}`)
+        } else {
+          pushAI(`agent unavailable (${msg}) — falling back to mock`, 'action')
+          realAvailable = false
+          await runMock()
+        }
+      }
+    } else {
+      await runMock()
     }
     pushChat('agent', 'Done.')
   } finally {
@@ -582,6 +685,20 @@ chatForm.addEventListener('submit', async (e) => {
     chatInput.focus()
   }
 })
+
+if (agentMode === 'auto') {
+  pingServer().then((ok) => {
+    realAvailable = ok
+    pushAI(
+      ok
+        ? 'LLM server detected — real agent active.'
+        : 'No LLM server — using mock keyword agent. Start `bun run playground:full` with AI_GATEWAY_API_KEY to use a real model.',
+      ok ? 'normal' : 'thinking',
+    )
+  })
+} else {
+  pushAI(agentMode === 'llm' ? 'Forced LLM mode.' : 'Forced mock mode.', 'thinking')
+}
 
 // Initial state
 render(

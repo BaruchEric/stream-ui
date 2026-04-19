@@ -131,16 +131,31 @@ The agent is the *primary* consumer, but never the *only* one.
 ## Playground
 
 ```bash
-bun run playground
+bun run playground         # mock keyword-routed agent, no API key required
+# or
+bun run playground:full    # real LLM + mock fallback (needs AI_GATEWAY_API_KEY)
 ```
 
 Opens a 3-pane demo at http://localhost:5173:
 
 - **CHAT** — type a prompt
-- **AI** — the (mock) agent's reasoning stream
+- **AI** — the agent's reasoning stream
 - **UI** — the components the agent renders
 
 Try: `palette` (renders one of every kind), `make a button`, `alert error`, `show a table`, `add a checkbox`.
+
+### Real LLM mode
+
+`bun run playground:full` runs the Vite dev server plus a small bun HTTP server at `:3030` that proxies `POST /api/agent` through the Vercel AI Gateway. The model calls two tools — `render_ui(spec)` and `append_ui(spec)` — and the server streams each tool call back to the browser as SSE, feeding the same render/append loop the mock uses.
+
+Copy `.env.example` → `.env.local` and set:
+
+```bash
+AI_GATEWAY_API_KEY=...                     # from https://vercel.com/ai-gateway
+# AI_MODEL=anthropic/claude-sonnet-4-6     # override the default model
+```
+
+If the server isn't running or the key isn't set, the playground automatically falls back to the mock keyword-routed agent.
 
 ## Develop
 
@@ -156,4 +171,4 @@ bun run build
 
 ## License
 
-TBD
+[MIT](./LICENSE) © Eric Baruch

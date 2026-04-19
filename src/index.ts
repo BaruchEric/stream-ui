@@ -26,7 +26,7 @@ for (const [kind, renderer] of Object.entries(builtins) as Array<[string, Render
   register(kind, renderer)
 }
 
-export const VERSION = '0.4.0'
+export const VERSION = '0.5.0'
 
 // ─── re-exports ─────────────────────────────────────────────────────────
 export { builtins } from './components'
@@ -38,6 +38,7 @@ export {
   register,
   unregister,
 } from './registry'
+export { safeHref, safeImageSrc } from './safe-url'
 export type {
   ActionEvent,
   ActionHandler,
@@ -58,12 +59,79 @@ export type {
 } from './types'
 
 // ─── high-level convenience wrappers ────────────────────────────────────
+
+// Focus preservation: `render()` replaces the entire subtree, which destroys
+// focus, selection, and IME state. Before the replace we snapshot the active
+// form control (by id or name); after the replace we find the matching node
+// in the new tree and restore focus + selection range. This makes the
+// framework usable for real input flows — without it, any re-render during
+// typing blows away the user's cursor position.
+type PreservedFocus = {
+  id: string | null
+  name: string | null
+  selectionStart: number | null
+  selectionEnd: number | null
+}
+
+function capturePreservable(container: HTMLElement): PreservedFocus | null {
+  if (typeof document === 'undefined') return null
+  const active = document.activeElement
+  if (!(active instanceof HTMLElement)) return null
+  if (!container.contains(active)) return null
+  const id = active.id || null
+  const name =
+    active instanceof HTMLInputElement ||
+    active instanceof HTMLTextAreaElement ||
+    active instanceof HTMLSelectElement
+      ? active.name || null
+      : null
+  if (!id && !name) return null
+  let selectionStart: number | null = null
+  let selectionEnd: number | null = null
+  if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+    try {
+      selectionStart = active.selectionStart
+      selectionEnd = active.selectionEnd
+    } catch {
+      // some input types (e.g. number) don't support selection
+    }
+  }
+  return { id, name, selectionStart, selectionEnd }
+}
+
+function restorePreserved(container: HTMLElement, preserved: PreservedFocus): void {
+  let target: HTMLElement | null = null
+  if (preserved.id && typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    const el = container.querySelector(`#${CSS.escape(preserved.id)}`)
+    if (el instanceof HTMLElement) target = el
+  }
+  if (!target && preserved.name) {
+    const el = container.querySelector(`[name="${preserved.name}"]`)
+    if (el instanceof HTMLElement) target = el
+  }
+  if (!target) return
+  target.focus()
+  if (
+    (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) &&
+    preserved.selectionStart !== null &&
+    preserved.selectionEnd !== null
+  ) {
+    try {
+      target.setSelectionRange(preserved.selectionStart, preserved.selectionEnd)
+    } catch {
+      // non-selectable input types — best effort
+    }
+  }
+}
+
 export function render(
   spec: ComponentSpec | AnySpec,
   container: HTMLElement,
   onAction?: ActionHandler,
 ): void {
+  const preserved = capturePreservable(container)
   container.replaceChildren(createElement(spec, onAction))
+  if (preserved) restorePreserved(container, preserved)
 }
 
 export function append(

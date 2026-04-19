@@ -1,4 +1,5 @@
 import { createElement } from './registry'
+import { safeHref, safeImageSrc } from './safe-url'
 import type { ComponentKind, Renderer, SpecOf } from './types'
 
 // Each built-in renderer is a pure function: spec + optional action handler
@@ -63,7 +64,7 @@ export const builtins: BuiltinRenderers = {
   image: (spec) => {
     const el = document.createElement('img')
     el.className = 'sui-image'
-    el.src = spec.src
+    el.src = safeImageSrc(spec.src)
     el.alt = spec.alt
     if (spec.width) el.width = spec.width
     if (spec.height) el.height = spec.height
@@ -323,9 +324,10 @@ export const builtins: BuiltinRenderers = {
   link: (spec) => {
     const el = document.createElement('a')
     el.className = 'sui-link'
-    el.href = spec.href
+    const safe = safeHref(spec.href)
+    el.href = safe
     el.textContent = spec.label
-    if (/^(https?:)?\/\//.test(spec.href)) {
+    if (/^(https?:)?\/\//.test(safe)) {
       el.target = '_blank'
       el.rel = 'noopener noreferrer'
     }
