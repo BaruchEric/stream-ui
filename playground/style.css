@@ -41,7 +41,7 @@ code {
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.25fr;
+  grid-template-rows: minmax(140px, 1fr) minmax(140px, 1fr) minmax(0, 3fr);
   gap: 1rem;
   flex: 1;
   min-height: 0;
