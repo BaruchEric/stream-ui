@@ -362,6 +362,35 @@ export const builtins: BuiltinRenderers = {
     el.appendChild(submit)
     el.addEventListener('submit', (e) => {
       e.preventDefault()
+      let firstInvalid: HTMLInputElement | null = null
+      for (const field of spec.fields) {
+        const input = el.querySelector(`input[name="${field.name}"]`) as HTMLInputElement | null
+        if (!input) continue
+        const msg = validate(input.value, field.validation, field.format)
+        const wrap = input.closest('.sui-input-wrap') as HTMLElement | null
+        if (wrap) {
+          const existing = wrap.querySelector('.sui-input-error')
+          if (msg) {
+            input.setAttribute('aria-invalid', 'true')
+            if (existing) existing.textContent = msg
+            else {
+              const errEl = document.createElement('span')
+              errEl.className = 'sui-input-error'
+              errEl.setAttribute('role', 'alert')
+              errEl.textContent = msg
+              wrap.appendChild(errEl)
+            }
+          } else {
+            input.removeAttribute('aria-invalid')
+            existing?.remove()
+          }
+        }
+        if (msg && !firstInvalid) firstInvalid = input
+      }
+      if (firstInvalid) {
+        firstInvalid.focus()
+        return
+      }
       const data = new FormData(el)
       const payload: Record<string, unknown> = {}
       for (const [k, v] of data.entries()) payload[k] = v

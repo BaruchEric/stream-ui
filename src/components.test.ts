@@ -347,3 +347,62 @@ describe('textarea — validation', () => {
     expect(wrap.querySelector('.sui-input-error')?.textContent).toBe('This field is required')
   })
 })
+
+describe('form — submit-time validation', () => {
+  it('blocks submit when required field is empty', () => {
+    const calls: unknown[] = []
+    const form = builtins.form(
+      {
+        kind: 'form',
+        submitLabel: 'Save',
+        fields: [
+          { name: 'name', label: 'Name', type: 'text', validation: { required: true } },
+          { name: 'email', label: 'Email', type: 'email', format: 'email' },
+        ],
+      },
+      (e) => calls.push(e),
+    )
+    document.body.appendChild(form)
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    expect(calls).toHaveLength(0)
+    const firstInput = form.querySelector('input[name="name"]') as HTMLInputElement
+    expect(firstInput.getAttribute('aria-invalid')).toBe('true')
+    form.remove()
+  })
+
+  it('fires action with payload when all fields valid', () => {
+    const calls: unknown[] = []
+    const form = builtins.form(
+      {
+        kind: 'form',
+        submitLabel: 'Save',
+        fields: [{ name: 'name', label: 'Name', type: 'text' }],
+      },
+      (e) => calls.push(e),
+    )
+    document.body.appendChild(form)
+    ;(form.querySelector('input[name="name"]') as HTMLInputElement).value = 'Eric'
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    expect(calls).toEqual([{ action: 'submit:Save', payload: { name: 'Eric' } }])
+    form.remove()
+  })
+
+  it('focuses the first invalid field', () => {
+    const form = builtins.form(
+      {
+        kind: 'form',
+        submitLabel: 'Save',
+        fields: [
+          { name: 'a', label: 'A', type: 'text' },
+          { name: 'b', label: 'B', type: 'text', validation: { required: true } },
+        ],
+      },
+      () => {},
+    )
+    document.body.appendChild(form)
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    const b = form.querySelector('input[name="b"]') as HTMLInputElement
+    expect(document.activeElement).toBe(b)
+    form.remove()
+  })
+})
