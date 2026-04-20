@@ -115,10 +115,31 @@ function pushAI(text: string, variant: 'thinking' | 'normal' | 'action' = 'norma
   aiStream.scrollTop = aiStream.scrollHeight
 }
 
-const onAction = (event: ActionEvent): void => {
+const onAction: ActionHandler = (event: ActionEvent): void => {
   const payload = event.payload ? ` ${JSON.stringify(event.payload)}` : ''
   pushAI(`← UI action: ${event.action}${payload}`, 'action')
   pushChat('system', `[ui] ${event.action}${payload}`)
+
+  if (event.action.startsWith('submit:')) {
+    const formName = event.action.slice('submit:'.length)
+    addMessage({
+      role: 'user',
+      kind: 'form-submit',
+      name: formName,
+      fields: (event.payload ?? {}) as Record<string, unknown>,
+    })
+    void runAgent()
+    return
+  }
+
+  // Skip non-submit field-change actions — they're local state only.
+  const p = event.payload as { name?: string; value?: unknown; checked?: unknown } | undefined
+  const isFieldChange =
+    typeof p?.name === 'string' && ('value' in (p ?? {}) || 'checked' in (p ?? {}))
+  if (isFieldChange) return
+
+  addMessage({ role: 'user', kind: 'button-click', action: event.action })
+  void runAgent()
 }
 
 type AgentEvent =
