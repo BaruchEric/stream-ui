@@ -242,3 +242,23 @@ code {
   font-size: 0.75rem;
   opacity: 0.7;
 }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-header-btn {
+  background: transparent;
+  color: var(--sui-fg, #ccc);
+  border: 1px solid var(--sui-border, #444);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.75em;
+  cursor: pointer;
+}
+
+.panel-header-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}

@@ -14,7 +14,10 @@
 
     <div class="grid">
       <section class="region region-chat">
-        <h2>CHAT</h2>
+        <div class="panel-header">
+          <h2>CHAT</h2>
+          <button type="button" id="chat-clear" class="panel-header-btn">Clear</button>
+        </div>
         <div id="chat-log" class="scroll" aria-live="polite"></div>
         <form id="chat-form" class="chat-input">
           <input id="chat-input" type="text" placeholder="Ask the agent…" autocomplete="off" autofocus />

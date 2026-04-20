@@ -773,6 +773,25 @@ if (agentMode === 'auto') {
   pushAI(agentMode === 'llm' ? 'Forced LLM mode.' : 'Forced mock mode.', 'thinking')
 }
 
+const clearBtn = document.getElementById('chat-clear') as HTMLButtonElement | null
+clearBtn?.addEventListener('click', () => {
+  messages.length = 0
+  saveMessages(messages)
+  chatLog.innerHTML = ''
+  aiStream.innerHTML = ''
+  render(
+    {
+      kind: 'card',
+      title: 'Welcome to stream-ui',
+      body: 'Type a prompt in CHAT. Type "palette" to see every component at once.',
+    },
+    uiStage,
+    onAction,
+  )
+  pushChat('system', 'session cleared')
+  pushAI('Agent ready.')
+})
+
 // Initial state
 render(
   {
