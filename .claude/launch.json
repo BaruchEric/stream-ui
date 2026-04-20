@@ -6,6 +6,12 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "playground"],
       "port": 5173
+    },
+    {
+      "name": "stream-ui-playground-full",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "playground:full"],
+      "port": 5173
     }
   ]
 }

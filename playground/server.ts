@@ -5,11 +5,56 @@
 // playground frontend, which feeds the existing render/append loop.
 //
 // Run:   bun run playground:server
-// Env:   AI_GATEWAY_API_KEY=... (or OPENAI_API_KEY / ANTHROPIC_API_KEY fallback)
+// Env:   AI_GATEWAY_API_KEY=... (or VERCEL_AI_GATEWAY_API_KEY / ANTHROPIC_API_KEY
+//        / OPENAI_API_KEY fallback). Parent-directory .env files are auto-loaded
+//        so shared keys in e.g. ~/dev/.env propagate without copying.
 // Model: override with AI_MODEL=provider/model-id (default: anthropic/claude-sonnet-4-6)
 
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { stepCountIs, streamText, tool } from 'ai'
 import { z } from 'zod'
+
+// Walk from cwd up to $HOME loading .env files with lowest priority — lets a
+// shared ~/dev/.env provide keys without duplicating into every project .env.
+function loadParentEnvFiles(): void {
+  const home = process.env.HOME ?? '/'
+  let dir = resolve(process.cwd(), '..')
+  while (dir.startsWith(home) && dir !== home && dir !== '/') {
+    const file = resolve(dir, '.env')
+    if (existsSync(file)) {
+      for (const line of readFileSync(file, 'utf8').split('\n')) {
+        const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
+        if (!m) continue
+        const [, key, rawValue] = m
+        if (process.env[key] !== undefined) continue
+        process.env[key] = rawValue.replace(/^['"]|['"]$/g, '')
+      }
+    }
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  // Also check $HOME itself.
+  const homeEnv = resolve(home, '.env')
+  if (existsSync(homeEnv)) {
+    for (const line of readFileSync(homeEnv, 'utf8').split('\n')) {
+      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
+      if (!m) continue
+      const [, key, rawValue] = m
+      if (process.env[key] !== undefined) continue
+      process.env[key] = rawValue.replace(/^['"]|['"]$/g, '')
+    }
+  }
+}
+
+loadParentEnvFiles()
+
+// The Vercel AI SDK gateway provider reads AI_GATEWAY_API_KEY; accept the
+// longer VERCEL_AI_GATEWAY_API_KEY as an alias.
+if (!process.env.AI_GATEWAY_API_KEY && process.env.VERCEL_AI_GATEWAY_API_KEY) {
+  process.env.AI_GATEWAY_API_KEY = process.env.VERCEL_AI_GATEWAY_API_KEY
+}
 
 const PORT = Number(process.env.PLAYGROUND_SERVER_PORT ?? 3030)
 const MODEL = process.env.AI_MODEL ?? 'anthropic/claude-sonnet-4-6'
