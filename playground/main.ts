@@ -538,13 +538,13 @@ const keywordRoutes: Route[] = [
 ]
 
 // ─── real LLM client (talks to playground/server.ts via SSE) ────────────
-async function* realAgent(prompt: string): AsyncGenerator<AgentEvent> {
+async function* realAgent(msgs: PlaygroundMessage[]): AsyncGenerator<AgentEvent> {
   let response: Response
   try {
     response = await fetch('/api/agent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ messages: msgs }),
     })
   } catch (err) {
     throw new Error(`network: ${err instanceof Error ? err.message : String(err)}`)
@@ -667,24 +667,24 @@ async function pingServer(): Promise<boolean> {
   }
 }
 
-chatForm.addEventListener('submit', async (e) => {
-  e.preventDefault()
-  const prompt = chatInput.value.trim()
-  if (!prompt) return
-  pushChat('human', prompt)
-  chatInput.value = ''
+async function runAgent(): Promise<void> {
   chatInput.disabled = true
   sendBtn.disabled = true
-
   const runMock = async () => {
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user')
+    const prompt = lastUser && lastUser.kind === 'prompt' ? lastUser.text : ''
     for await (const event of mockAgent(prompt)) {
-      if (event.type === 'thinking') pushAI(event.text, 'thinking')
-      else if (event.type === 'render') {
+      if (event.type === 'thinking') {
+        pushAI(event.text, 'thinking')
+        addMessage({ role: 'assistant', kind: 'thinking', text: event.text })
+      } else if (event.type === 'render') {
         pushAI(`→ render ${event.spec.kind}`)
         render(event.spec, uiStage, onAction)
+        addMessage({ role: 'assistant', kind: 'render', spec: event.spec })
       } else if (event.type === 'append') {
         pushAI(`→ append ${event.spec.kind}`)
         append(event.spec, uiStage, onAction)
+        addMessage({ role: 'assistant', kind: 'append', spec: event.spec })
       }
     }
   }
@@ -692,14 +692,18 @@ chatForm.addEventListener('submit', async (e) => {
   try {
     if (realAvailable) {
       try {
-        for await (const event of realAgent(prompt)) {
-          if (event.type === 'thinking') pushAI(event.text, 'thinking')
-          else if (event.type === 'render') {
+        for await (const event of realAgent(messages)) {
+          if (event.type === 'thinking') {
+            pushAI(event.text, 'thinking')
+            addMessage({ role: 'assistant', kind: 'thinking', text: event.text })
+          } else if (event.type === 'render') {
             pushAI(`→ render ${event.spec.kind}`)
             render(event.spec, uiStage, onAction)
+            addMessage({ role: 'assistant', kind: 'render', spec: event.spec })
           } else if (event.type === 'append') {
             pushAI(`→ append ${event.spec.kind}`)
             append(event.spec, uiStage, onAction)
+            addMessage({ role: 'assistant', kind: 'append', spec: event.spec })
           }
         }
       } catch (err) {
@@ -722,6 +726,16 @@ chatForm.addEventListener('submit', async (e) => {
     sendBtn.disabled = false
     chatInput.focus()
   }
+}
+
+chatForm.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const prompt = chatInput.value.trim()
+  if (!prompt) return
+  pushChat('human', prompt)
+  chatInput.value = ''
+  addMessage({ role: 'user', kind: 'prompt', text: prompt })
+  await runAgent()
 })
 
 if (agentMode === 'auto') {
