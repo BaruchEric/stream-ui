@@ -146,10 +146,24 @@ Common spec shapes (partial reference):
   { kind: 'badge', content: string, variant?: 'default'|'success'|'warning'|'error' }
   { kind: 'button', label: string, action: string, variant?: 'default'|'primary'|'danger' }
   { kind: 'link', label: string, href: string }
-  { kind: 'input', name: string, label: string, type?: string, action?: string }
-  { kind: 'form', submitLabel: string, fields: [{name, label, type, placeholder?}, ...] }
+  { kind: 'input', name: string, label: string, type?: string, action?: string,
+    format?: 'email'|'phone'|'url'|'zip'|'credit-card',
+    validation?: { required?: boolean, pattern?: string, minLength?: number,
+      maxLength?: number, min?: number, max?: number, errorMessage?: string } }
+  { kind: 'textarea', name: string, label: string, rows?: number,
+    validation?: { ...same as input... } }
+  { kind: 'form', submitLabel: string, fields: [
+    { name, label, type, placeholder?, format?, validation? }, ...
+  ] }
   { kind: 'list', items: string[], ordered?: boolean }
   { kind: 'table', headers: string[], rows: string[][] }
+
+Input formats bundle validation + display masking:
+  - 'email' → validates email address
+  - 'phone' → validates 10-digit US phone + auto-formats as (555) 123-4567
+  - 'url'   → validates http(s) URL
+  - 'zip'   → validates 5 or 9 digit US zip + formats 12345-6789
+  - 'credit-card' → validates 13-19 digits + formats as groups of 4
 
 Guidelines:
 1. Default to render_ui. Use append_ui only when the user says "add" or "also".
@@ -158,10 +172,14 @@ Guidelines:
 3. Keep specs small, real, and purposeful. No placeholder lorem ipsum.
 4. For interactive elements (button, input, form, link) always set a meaningful
    action or href that describes what the user should be able to do.
-5. Think briefly about the goal before the first tool call.
-6. If the latest user message is "[form submit: <name>] key="value" ...", the user
+5. For fields that are emails / phone numbers / URLs / ZIP codes / credit cards,
+   set the appropriate 'format' — don't just set 'type'. Use 'validation.required:
+   true' when the field is mandatory. The framework handles both validation and
+   display masking for you.
+6. Think briefly about the goal before the first tool call.
+7. If the latest user message is "[form submit: <name>] key="value" ...", the user
    submitted form <name>. Acknowledge or advance — e.g. render_ui a success card.
-7. If the latest user message is "[button clicked: <action>]", the user clicked a
+8. If the latest user message is "[button clicked: <action>]", the user clicked a
    button with that action. Continue the flow accordingly.`
 
 type AgentEvent =
