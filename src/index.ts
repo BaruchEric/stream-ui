@@ -39,6 +39,7 @@ export {
   unregister,
 } from './registry'
 export { safeHref, safeImageSrc } from './safe-url'
+export { applyMask, validate } from './validation'
 export type {
   ActionEvent,
   ActionHandler,
@@ -52,10 +53,12 @@ export type {
   FormField,
   Gap,
   HeadingLevel,
+  InputFormat,
   InputType,
   Renderer,
   SelectOption,
   SpecOf,
+  ValidationRules,
 } from './types'
 
 // ─── high-level convenience wrappers ────────────────────────────────────

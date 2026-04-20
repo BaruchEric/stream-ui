@@ -364,3 +364,17 @@
   font-size: 0.8rem;
   color: rgb(220, 90, 90);
 }
+
+/* ─── validation errors ────────────────────────────────────────── */
+
+.sui-input[aria-invalid="true"],
+.sui-textarea[aria-invalid="true"] {
+  border-color: rgb(220, 90, 90);
+}
+
+.sui-input-error {
+  color: rgb(220, 90, 90);
+  font-size: 0.85em;
+  margin-top: 0.25em;
+  display: block;
+}
