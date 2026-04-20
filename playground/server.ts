@@ -95,6 +95,33 @@ const componentSpecSchema = z
   .passthrough()
   .describe('A stream-ui ComponentSpec. Include all fields the kind expects.')
 
+type PlaygroundMessage =
+  | { role: 'user'; kind: 'prompt'; text: string }
+  | { role: 'user'; kind: 'form-submit'; name: string; fields: Record<string, unknown> }
+  | { role: 'user'; kind: 'button-click'; action: string }
+  | { role: 'assistant'; kind: 'thinking'; text: string }
+  | { role: 'assistant'; kind: 'render' | 'append'; spec: unknown }
+
+type CoreMessage = { role: 'user' | 'assistant'; content: string }
+
+function toCoreMessages(messages: PlaygroundMessage[]): CoreMessage[] {
+  return messages.map((m) => {
+    if (m.role === 'user') {
+      if (m.kind === 'prompt') return { role: 'user', content: m.text }
+      if (m.kind === 'form-submit') {
+        const body = Object.entries(m.fields)
+          .map(([k, v]) => `${k}="${String(v)}"`)
+          .join(' ')
+        return { role: 'user', content: `[form submit: ${m.name}] ${body}` }
+      }
+      return { role: 'user', content: `[button clicked: ${m.action}]` }
+    }
+    if (m.kind === 'thinking') return { role: 'assistant', content: m.text }
+    const tag = m.kind === 'render' ? '[render]' : '[append]'
+    return { role: 'assistant', content: `${tag} ${JSON.stringify(m.spec)}` }
+  })
+}
+
 const systemPrompt = `You are a UI-generation agent for stream-ui.
 
 stream-ui is a framework where JSON specs are rendered to DOM. Your job is to
@@ -131,7 +158,11 @@ Guidelines:
 3. Keep specs small, real, and purposeful. No placeholder lorem ipsum.
 4. For interactive elements (button, input, form, link) always set a meaningful
    action or href that describes what the user should be able to do.
-5. Think briefly about the goal before the first tool call.`
+5. Think briefly about the goal before the first tool call.
+6. If the latest user message is "[form submit: <name>] key="value" ...", the user
+   submitted form <name>. Acknowledge or advance — e.g. render_ui a success card.
+7. If the latest user message is "[button clicked: <action>]", the user clicked a
+   button with that action. Continue the flow accordingly.`
 
 type AgentEvent =
   | { type: 'thinking'; text: string }
@@ -145,13 +176,19 @@ function sseEncode(event: AgentEvent): string {
 }
 
 async function handleAgent(req: Request): Promise<Response> {
-  let prompt = ''
+  let messages: PlaygroundMessage[]
   try {
-    const body = (await req.json()) as { prompt?: unknown }
-    if (typeof body.prompt !== 'string' || body.prompt.trim() === '') {
-      return new Response('Missing prompt', { status: 400 })
+    const body = (await req.json()) as {
+      prompt?: unknown
+      messages?: unknown
     }
-    prompt = body.prompt
+    if (Array.isArray(body.messages) && body.messages.length > 0) {
+      messages = body.messages as PlaygroundMessage[]
+    } else if (typeof body.prompt === 'string' && body.prompt.trim() !== '') {
+      messages = [{ role: 'user', kind: 'prompt', text: body.prompt }]
+    } else {
+      return new Response('Missing prompt or messages', { status: 400 })
+    }
   } catch {
     return new Response('Invalid JSON', { status: 400 })
   }
@@ -167,7 +204,7 @@ async function handleAgent(req: Request): Promise<Response> {
         const result = streamText({
           model: MODEL,
           system: systemPrompt,
-          prompt,
+          messages: toCoreMessages(messages),
           tools: {
             render_ui: tool({
               description: 'Render a component, replacing the existing UI.',
