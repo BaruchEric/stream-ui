@@ -43,3 +43,44 @@ describe('validate — primitives', () => {
     expect(validate('', { pattern: '^[0-9]+$' })).toBeNull()
   })
 })
+
+describe('validate — formats', () => {
+  it('email', () => {
+    expect(validate('x@y.z', undefined, 'email')).toBeNull()
+    expect(validate('nope', undefined, 'email')).toBe('Enter a valid email')
+    expect(validate('', undefined, 'email')).toBeNull()
+  })
+
+  it('phone (US)', () => {
+    expect(validate('(555) 123-4567', undefined, 'phone')).toBeNull()
+    expect(validate('555-1234', undefined, 'phone')).toBe('Enter a 10-digit phone')
+  })
+
+  it('url', () => {
+    expect(validate('https://example.com', undefined, 'url')).toBeNull()
+    expect(validate('http://x', undefined, 'url')).toBeNull()
+    expect(validate('nope', undefined, 'url')).toBe('Enter a valid URL')
+  })
+
+  it('zip (5 or 9 digit)', () => {
+    expect(validate('12345', undefined, 'zip')).toBeNull()
+    expect(validate('12345-6789', undefined, 'zip')).toBeNull()
+    expect(validate('1234', undefined, 'zip')).toBe('Enter a ZIP code')
+  })
+
+  it('credit-card (13-19 digits, allows spaces/dashes)', () => {
+    expect(validate('4111 1111 1111 1111', undefined, 'credit-card')).toBeNull()
+    expect(validate('4111-1111-1111-1111', undefined, 'credit-card')).toBeNull()
+    expect(validate('4111111111', undefined, 'credit-card')).toBe('Enter a card number')
+  })
+
+  it('explicit pattern overrides format default', () => {
+    expect(validate('12345', { pattern: '^\\d{4}$' }, 'phone')).toBe('Invalid format')
+    expect(validate('1234', { pattern: '^\\d{4}$' }, 'phone')).toBeNull()
+  })
+
+  it('format + required', () => {
+    expect(validate('', { required: true }, 'email')).toBe('This field is required')
+    expect(validate('', { required: false }, 'email')).toBeNull()
+  })
+})
