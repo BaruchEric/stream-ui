@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { validate } from './validation'
+import { applyMask, validate } from './validation'
 
 describe('validate — primitives', () => {
   it('returns null with no rules', () => {
@@ -82,5 +82,42 @@ describe('validate — formats', () => {
   it('format + required', () => {
     expect(validate('', { required: true }, 'email')).toBe('This field is required')
     expect(validate('', { required: false }, 'email')).toBeNull()
+  })
+})
+
+describe('applyMask', () => {
+  it('phone — progressive', () => {
+    expect(applyMask('', 'phone')).toBe('')
+    expect(applyMask('5', 'phone')).toBe('(5')
+    expect(applyMask('555', 'phone')).toBe('(555')
+    expect(applyMask('5551', 'phone')).toBe('(555) 1')
+    expect(applyMask('555123', 'phone')).toBe('(555) 123')
+    expect(applyMask('5551234', 'phone')).toBe('(555) 123-4')
+    expect(applyMask('5551234567', 'phone')).toBe('(555) 123-4567')
+  })
+
+  it('phone — strips non-digits and truncates at 10', () => {
+    expect(applyMask('(555) 123-4567', 'phone')).toBe('(555) 123-4567')
+    expect(applyMask('555-abc-1234567890', 'phone')).toBe('(555) 123-4567')
+  })
+
+  it('zip — 5 or 9 digits with dash', () => {
+    expect(applyMask('1234', 'zip')).toBe('1234')
+    expect(applyMask('12345', 'zip')).toBe('12345')
+    expect(applyMask('123456', 'zip')).toBe('12345-6')
+    expect(applyMask('123456789', 'zip')).toBe('12345-6789')
+    expect(applyMask('1234567890123', 'zip')).toBe('12345-6789')
+  })
+
+  it('credit-card — groups of 4', () => {
+    expect(applyMask('4111', 'credit-card')).toBe('4111')
+    expect(applyMask('41111111', 'credit-card')).toBe('4111 1111')
+    expect(applyMask('4111111111111111', 'credit-card')).toBe('4111 1111 1111 1111')
+    expect(applyMask('4111-1111-1111-1111', 'credit-card')).toBe('4111 1111 1111 1111')
+  })
+
+  it('no-op for unmasked formats', () => {
+    expect(applyMask('x@y.z', 'email')).toBe('x@y.z')
+    expect(applyMask('https://x', 'url')).toBe('https://x')
   })
 })
