@@ -297,13 +297,15 @@ export const builtins: BuiltinRenderers = {
     ta.rows = spec.rows ?? 4
     if (spec.placeholder) ta.placeholder = spec.placeholder
     if (spec.value !== undefined) ta.value = spec.value
+    const wrap = createLabeledControl(spec.label, ta)
+    bindValidation(ta, wrap, spec.validation, undefined)
     const action = spec.action
     if (action) {
       ta.addEventListener('input', () => {
         onAction?.({ action, payload: { name: spec.name, value: ta.value } })
       })
     }
-    return createLabeledControl(spec.label, ta)
+    return wrap
   },
 
   select: (spec, onAction) => {

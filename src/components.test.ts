@@ -332,3 +332,18 @@ describe('input — validation + mask', () => {
     expect(input.type).toBe('email')
   })
 })
+
+describe('textarea — validation', () => {
+  it('shows error on blur when required and empty', () => {
+    const wrap = builtins.textarea({
+      kind: 'textarea',
+      name: 'bio',
+      label: 'Bio',
+      validation: { required: true },
+    })
+    const ta = wrap.querySelector('textarea') as HTMLTextAreaElement
+    ta.dispatchEvent(new Event('blur', { bubbles: true }))
+    expect(ta.getAttribute('aria-invalid')).toBe('true')
+    expect(wrap.querySelector('.sui-input-error')?.textContent).toBe('This field is required')
+  })
+})
