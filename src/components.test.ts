@@ -273,3 +273,62 @@ describe('builtins — DOM output', () => {
     warn.mockRestore()
   })
 })
+
+describe('input — validation + mask', () => {
+  it('applies mask on input event', () => {
+    const wrap = builtins.input({
+      kind: 'input',
+      name: 'phone',
+      label: 'Phone',
+      format: 'phone',
+    })
+    const input = wrap.querySelector('input') as HTMLInputElement
+    input.value = '5551234567'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(input.value).toBe('(555) 123-4567')
+  })
+
+  it('shows error on blur when invalid', () => {
+    const wrap = builtins.input({
+      kind: 'input',
+      name: 'email',
+      label: 'Email',
+      format: 'email',
+      validation: { required: true },
+    })
+    const input = wrap.querySelector('input') as HTMLInputElement
+    input.value = 'not-an-email'
+    input.dispatchEvent(new Event('blur', { bubbles: true }))
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    const err = wrap.querySelector('.sui-input-error')
+    expect(err?.textContent).toBe('Enter a valid email')
+  })
+
+  it('clears error when value becomes valid', () => {
+    const wrap = builtins.input({
+      kind: 'input',
+      name: 'email',
+      label: 'Email',
+      format: 'email',
+    })
+    const input = wrap.querySelector('input') as HTMLInputElement
+    input.value = 'bad'
+    input.dispatchEvent(new Event('blur', { bubbles: true }))
+    expect(wrap.querySelector('.sui-input-error')).not.toBeNull()
+    input.value = 'x@y.z'
+    input.dispatchEvent(new Event('blur', { bubbles: true }))
+    expect(wrap.querySelector('.sui-input-error')).toBeNull()
+    expect(input.hasAttribute('aria-invalid')).toBe(false)
+  })
+
+  it('format sets HTML type when type unset', () => {
+    const wrap = builtins.input({
+      kind: 'input',
+      name: 'e',
+      label: 'E',
+      format: 'email',
+    })
+    const input = wrap.querySelector('input') as HTMLInputElement
+    expect(input.type).toBe('email')
+  })
+})

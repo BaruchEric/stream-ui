@@ -1,6 +1,7 @@
 import { createElement } from './registry'
 import { safeHref, safeImageSrc } from './safe-url'
-import type { ComponentKind, Renderer, SpecOf } from './types'
+import type { ComponentKind, InputFormat, Renderer, SpecOf, ValidationRules } from './types'
+import { applyMask, validate } from './validation'
 
 // Each built-in renderer is a pure function: spec + optional action handler
 // → DOM element. Recursion (card/stack/row/grid → children) goes through
@@ -22,6 +23,58 @@ function createLabeledControl(labelText: string, control: HTMLElement): HTMLLabe
   span.textContent = labelText
   wrap.append(span, control)
   return wrap
+}
+
+const MASKED_FORMATS: ReadonlySet<InputFormat> = new Set(['phone', 'zip', 'credit-card'])
+
+function formatToHtmlType(format: InputFormat | undefined): string | undefined {
+  switch (format) {
+    case 'email':
+      return 'email'
+    case 'phone':
+      return 'tel'
+    case 'url':
+      return 'url'
+    default:
+      return undefined
+  }
+}
+
+function bindMask(input: HTMLInputElement, format: InputFormat): void {
+  input.addEventListener('input', () => {
+    const masked = applyMask(input.value, format)
+    if (masked !== input.value) input.value = masked
+  })
+}
+
+function bindValidation(
+  control: HTMLInputElement | HTMLTextAreaElement,
+  wrap: HTMLElement,
+  rules: ValidationRules | undefined,
+  format: InputFormat | undefined,
+): void {
+  if (!rules && !format) return
+  const show = (msg: string | null) => {
+    const existing = wrap.querySelector('.sui-input-error')
+    if (msg) {
+      control.setAttribute('aria-invalid', 'true')
+      if (existing) {
+        existing.textContent = msg
+      } else {
+        const err = document.createElement('span')
+        err.className = 'sui-input-error'
+        err.setAttribute('role', 'alert')
+        err.textContent = msg
+        wrap.appendChild(err)
+      }
+    } else {
+      control.removeAttribute('aria-invalid')
+      existing?.remove()
+    }
+  }
+  control.addEventListener('blur', () => {
+    show(validate(control.value, rules, format))
+  })
 }
 
 export const builtins: BuiltinRenderers = {
@@ -220,16 +273,21 @@ export const builtins: BuiltinRenderers = {
     const input = document.createElement('input')
     input.className = 'sui-input'
     input.name = spec.name
-    input.type = spec.type ?? 'text'
+    input.type = spec.type ?? formatToHtmlType(spec.format) ?? 'text'
     if (spec.placeholder) input.placeholder = spec.placeholder
     if (spec.value !== undefined) input.value = spec.value
+    const wrap = createLabeledControl(spec.label, input)
+    const format = spec.format
+    const rules = spec.validation
+    bindValidation(input, wrap, rules, format)
+    if (format && MASKED_FORMATS.has(format)) bindMask(input, format)
     const action = spec.action
     if (action) {
       input.addEventListener('input', () => {
         onAction?.({ action, payload: { name: spec.name, value: input.value } })
       })
     }
-    return createLabeledControl(spec.label, input)
+    return wrap
   },
 
   textarea: (spec, onAction) => {
