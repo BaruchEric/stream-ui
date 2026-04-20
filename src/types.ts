@@ -96,6 +96,35 @@ export type ComponentSpec =
 export type ComponentKind = ComponentSpec['kind']
 export type SpecOf<K extends ComponentKind> = Extract<ComponentSpec, { kind: K }>
 
+// Runtime enumeration of built-in kinds. A TS union isn't accessible at
+// runtime, so anything that needs the list (e.g. the LLM's system prompt in
+// the playground server) imports this instead of redeclaring.
+export const BUILTIN_KINDS = [
+  'text',
+  'heading',
+  'paragraph',
+  'code',
+  'divider',
+  'image',
+  'card',
+  'stack',
+  'row',
+  'grid',
+  'alert',
+  'badge',
+  'spinner',
+  'progress',
+  'list',
+  'table',
+  'input',
+  'textarea',
+  'select',
+  'checkbox',
+  'form',
+  'button',
+  'link',
+] as const satisfies readonly ComponentKind[]
+
 // ─── permissive shape for custom kinds registered at runtime ────────────
 // Custom kinds use this shape — no compile-time discrimination, but
 // fully renderable. The agent treats every spec as JSON anyway.

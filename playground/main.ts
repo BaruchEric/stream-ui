@@ -156,12 +156,29 @@ function measurePanelSizes(): PanelSizes | null {
   const ai = grid.querySelector<HTMLElement>('.region-ai')
   const ui = grid.querySelector<HTMLElement>('.region-ui')
   if (!chat || !ai || !ui) return null
+  const chatRect = chat.getBoundingClientRect()
   return {
-    colChat: chat.getBoundingClientRect().width,
+    colChat: chatRect.width,
     colAi: ai.getBoundingClientRect().width,
-    rowTop: chat.getBoundingClientRect().height,
+    rowTop: chatRect.height,
     rowUi: ui.getBoundingClientRect().height,
   }
+}
+
+// Clamp two adjacent panel sizes so neither drops below `min`. When one hits
+// the floor, the other absorbs the remainder so the combined size stays put.
+function clampPair(a: number, b: number, min: number): [number, number] {
+  let x = a
+  let y = b
+  if (x < min) {
+    y -= min - x
+    x = min
+  }
+  if (y < min) {
+    x -= min - y
+    y = min
+  }
+  return [Math.max(min, x), Math.max(min, y)]
 }
 
 if (grid) {
@@ -185,31 +202,17 @@ if (grid) {
         const delta = coord - startCoord
         const next: PanelSizes = { ...start }
         if (axis === 'col') {
-          let a = start.colChat + delta
-          let b = start.colAi - delta
-          if (a < MIN_PANEL_PX) {
-            b -= MIN_PANEL_PX - a
-            a = MIN_PANEL_PX
-          }
-          if (b < MIN_PANEL_PX) {
-            a -= MIN_PANEL_PX - b
-            b = MIN_PANEL_PX
-          }
-          next.colChat = Math.max(MIN_PANEL_PX, a)
-          next.colAi = Math.max(MIN_PANEL_PX, b)
+          const [colChat, colAi] = clampPair(
+            start.colChat + delta,
+            start.colAi - delta,
+            MIN_PANEL_PX,
+          )
+          next.colChat = colChat
+          next.colAi = colAi
         } else {
-          let a = start.rowTop + delta
-          let b = start.rowUi - delta
-          if (a < MIN_PANEL_PX) {
-            b -= MIN_PANEL_PX - a
-            a = MIN_PANEL_PX
-          }
-          if (b < MIN_PANEL_PX) {
-            a -= MIN_PANEL_PX - b
-            b = MIN_PANEL_PX
-          }
-          next.rowTop = Math.max(MIN_PANEL_PX, a)
-          next.rowUi = Math.max(MIN_PANEL_PX, b)
+          const [rowTop, rowUi] = clampPair(start.rowTop + delta, start.rowUi - delta, MIN_PANEL_PX)
+          next.rowTop = rowTop
+          next.rowUi = rowUi
         }
         applyPanelSizes(next)
       }
@@ -277,10 +280,28 @@ const onAction: ActionHandler = (event: ActionEvent): void => {
   void runAgent()
 }
 
-type AgentEvent =
+// Local variant of the agent stream events the playground consumes — a
+// subset of the framework's exported `AgentEvent` (no `done`, which is used
+// only as an SSE terminator by `realAgent` and not yielded).
+type AgentStreamEvent =
   | { type: 'thinking'; text: string }
   | { type: 'render'; spec: ComponentSpec | AnySpec }
   | { type: 'append'; spec: ComponentSpec | AnySpec }
+
+function handleAgentEvent(event: AgentStreamEvent): void {
+  if (event.type === 'thinking') {
+    pushAI(event.text, 'thinking')
+    addMessage({ role: 'assistant', kind: 'thinking', text: event.text })
+  } else if (event.type === 'render') {
+    pushAI(`→ render ${event.spec.kind}`)
+    render(event.spec, uiStage, onAction)
+    addMessage({ role: 'assistant', kind: 'render', spec: event.spec })
+  } else if (event.type === 'append') {
+    pushAI(`→ append ${event.spec.kind}`)
+    append(event.spec, uiStage, onAction)
+    addMessage({ role: 'assistant', kind: 'append', spec: event.spec })
+  }
+}
 
 function paletteSpecs(): ComponentSpec[] {
   return [
@@ -694,7 +715,7 @@ const keywordRoutes: Route[] = [
 ]
 
 // ─── real LLM client (talks to playground/server.ts via SSE) ────────────
-async function* realAgent(msgs: PlaygroundMessage[]): AsyncGenerator<AgentEvent> {
+async function* realAgent(msgs: PlaygroundMessage[]): AsyncGenerator<AgentStreamEvent> {
   let response: Response
   try {
     response = await fetch('/api/agent', {
@@ -750,7 +771,7 @@ async function* realAgent(msgs: PlaygroundMessage[]): AsyncGenerator<AgentEvent>
   }
 }
 
-async function* mockAgent(prompt: string): AsyncGenerator<AgentEvent> {
+async function* mockAgent(prompt: string): AsyncGenerator<AgentStreamEvent> {
   yield { type: 'thinking', text: 'Parsing prompt…' }
   await sleep(200)
   yield { type: 'thinking', text: `Heard: "${prompt}"` }
@@ -829,39 +850,13 @@ async function runAgent(): Promise<void> {
   const runMock = async () => {
     const lastUser = [...messages].reverse().find((m) => m.role === 'user')
     const prompt = lastUser && lastUser.kind === 'prompt' ? lastUser.text : ''
-    for await (const event of mockAgent(prompt)) {
-      if (event.type === 'thinking') {
-        pushAI(event.text, 'thinking')
-        addMessage({ role: 'assistant', kind: 'thinking', text: event.text })
-      } else if (event.type === 'render') {
-        pushAI(`→ render ${event.spec.kind}`)
-        render(event.spec, uiStage, onAction)
-        addMessage({ role: 'assistant', kind: 'render', spec: event.spec })
-      } else if (event.type === 'append') {
-        pushAI(`→ append ${event.spec.kind}`)
-        append(event.spec, uiStage, onAction)
-        addMessage({ role: 'assistant', kind: 'append', spec: event.spec })
-      }
-    }
+    for await (const event of mockAgent(prompt)) handleAgentEvent(event)
   }
 
   try {
     if (realAvailable) {
       try {
-        for await (const event of realAgent(messages)) {
-          if (event.type === 'thinking') {
-            pushAI(event.text, 'thinking')
-            addMessage({ role: 'assistant', kind: 'thinking', text: event.text })
-          } else if (event.type === 'render') {
-            pushAI(`→ render ${event.spec.kind}`)
-            render(event.spec, uiStage, onAction)
-            addMessage({ role: 'assistant', kind: 'render', spec: event.spec })
-          } else if (event.type === 'append') {
-            pushAI(`→ append ${event.spec.kind}`)
-            append(event.spec, uiStage, onAction)
-            addMessage({ role: 'assistant', kind: 'append', spec: event.spec })
-          }
-        }
+        for await (const event of realAgent(messages)) handleAgentEvent(event)
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         if (agentMode === 'llm') {

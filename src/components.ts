@@ -1,6 +1,13 @@
 import { createElement } from './registry'
 import { safeHref, safeImageSrc } from './safe-url'
-import type { ComponentKind, InputFormat, Renderer, SpecOf, ValidationRules } from './types'
+import type {
+  ActionHandler,
+  ComponentKind,
+  InputFormat,
+  Renderer,
+  SpecOf,
+  ValidationRules,
+} from './types'
 import { applyMask, validate } from './validation'
 
 // Each built-in renderer is a pure function: spec + optional action handler
@@ -47,6 +54,32 @@ function bindMask(input: HTMLInputElement, format: InputFormat): void {
   })
 }
 
+// Shared between blur-time validation (bindValidation) and submit-time
+// validation (form renderer): update aria-invalid and show/update/remove the
+// error span inside the input wrap.
+function showFieldError(
+  control: HTMLInputElement | HTMLTextAreaElement,
+  wrap: HTMLElement,
+  msg: string | null,
+): void {
+  const existing = wrap.querySelector('.sui-input-error')
+  if (msg) {
+    control.setAttribute('aria-invalid', 'true')
+    if (existing) {
+      existing.textContent = msg
+    } else {
+      const err = document.createElement('span')
+      err.className = 'sui-input-error'
+      err.setAttribute('role', 'alert')
+      err.textContent = msg
+      wrap.appendChild(err)
+    }
+  } else {
+    control.removeAttribute('aria-invalid')
+    existing?.remove()
+  }
+}
+
 function bindValidation(
   control: HTMLInputElement | HTMLTextAreaElement,
   wrap: HTMLElement,
@@ -54,26 +87,22 @@ function bindValidation(
   format: InputFormat | undefined,
 ): void {
   if (!rules && !format) return
-  const show = (msg: string | null) => {
-    const existing = wrap.querySelector('.sui-input-error')
-    if (msg) {
-      control.setAttribute('aria-invalid', 'true')
-      if (existing) {
-        existing.textContent = msg
-      } else {
-        const err = document.createElement('span')
-        err.className = 'sui-input-error'
-        err.setAttribute('role', 'alert')
-        err.textContent = msg
-        wrap.appendChild(err)
-      }
-    } else {
-      control.removeAttribute('aria-invalid')
-      existing?.remove()
-    }
-  }
   control.addEventListener('blur', () => {
-    show(validate(control.value, rules, format))
+    showFieldError(control, wrap, validate(control.value, rules, format))
+  })
+}
+
+// Fires onAction with { name, value } on every input event when `action` is
+// set — shared by the input and textarea renderers.
+function bindInputAction(
+  control: HTMLInputElement | HTMLTextAreaElement,
+  name: string,
+  action: string | undefined,
+  onAction: ActionHandler | undefined,
+): void {
+  if (!action) return
+  control.addEventListener('input', () => {
+    onAction?.({ action, payload: { name, value: control.value } })
   })
 }
 
@@ -281,12 +310,7 @@ export const builtins: BuiltinRenderers = {
     const rules = spec.validation
     bindValidation(input, wrap, rules, format)
     if (format && MASKED_FORMATS.has(format)) bindMask(input, format)
-    const action = spec.action
-    if (action) {
-      input.addEventListener('input', () => {
-        onAction?.({ action, payload: { name: spec.name, value: input.value } })
-      })
-    }
+    bindInputAction(input, spec.name, spec.action, onAction)
     return wrap
   },
 
@@ -299,12 +323,7 @@ export const builtins: BuiltinRenderers = {
     if (spec.value !== undefined) ta.value = spec.value
     const wrap = createLabeledControl(spec.label, ta)
     bindValidation(ta, wrap, spec.validation, undefined)
-    const action = spec.action
-    if (action) {
-      ta.addEventListener('input', () => {
-        onAction?.({ action, payload: { name: spec.name, value: ta.value } })
-      })
-    }
+    bindInputAction(ta, spec.name, spec.action, onAction)
     return wrap
   },
 
@@ -368,23 +387,7 @@ export const builtins: BuiltinRenderers = {
         if (!input) continue
         const msg = validate(input.value, field.validation, field.format)
         const wrap = input.closest('.sui-input-wrap') as HTMLElement | null
-        if (wrap) {
-          const existing = wrap.querySelector('.sui-input-error')
-          if (msg) {
-            input.setAttribute('aria-invalid', 'true')
-            if (existing) existing.textContent = msg
-            else {
-              const errEl = document.createElement('span')
-              errEl.className = 'sui-input-error'
-              errEl.setAttribute('role', 'alert')
-              errEl.textContent = msg
-              wrap.appendChild(errEl)
-            }
-          } else {
-            input.removeAttribute('aria-invalid')
-            existing?.remove()
-          }
-        }
+        if (wrap) showFieldError(input, wrap, msg)
         if (msg && !firstInvalid) firstInvalid = input
       }
       if (firstInvalid) {

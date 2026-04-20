@@ -14,6 +14,18 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { stepCountIs, streamText, tool } from 'ai'
 import { z } from 'zod'
+import { BUILTIN_KINDS } from '../src/types'
+
+function loadEnvFile(file: string): void {
+  if (!existsSync(file)) return
+  for (const line of readFileSync(file, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
+    if (!m) continue
+    const [, key, rawValue] = m
+    if (process.env[key] !== undefined) continue
+    process.env[key] = rawValue.replace(/^['"]|['"]$/g, '')
+  }
+}
 
 // Walk from cwd up to $HOME loading .env files with lowest priority — lets a
 // shared ~/dev/.env provide keys without duplicating into every project .env.
@@ -21,31 +33,18 @@ function loadParentEnvFiles(): void {
   const home = process.env.HOME ?? '/'
   let dir = resolve(process.cwd(), '..')
   while (dir.startsWith(home) && dir !== home && dir !== '/') {
-    const file = resolve(dir, '.env')
-    if (existsSync(file)) {
-      for (const line of readFileSync(file, 'utf8').split('\n')) {
-        const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
-        if (!m) continue
-        const [, key, rawValue] = m
-        if (process.env[key] !== undefined) continue
-        process.env[key] = rawValue.replace(/^['"]|['"]$/g, '')
-      }
-    }
+    loadEnvFile(resolve(dir, '.env'))
     const parent = dirname(dir)
     if (parent === dir) break
     dir = parent
   }
-  // Also check $HOME itself.
-  const homeEnv = resolve(home, '.env')
-  if (existsSync(homeEnv)) {
-    for (const line of readFileSync(homeEnv, 'utf8').split('\n')) {
-      const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
-      if (!m) continue
-      const [, key, rawValue] = m
-      if (process.env[key] !== undefined) continue
-      process.env[key] = rawValue.replace(/^['"]|['"]$/g, '')
-    }
-  }
+  loadEnvFile(resolve(home, '.env'))
+}
+
+function hasAnyApiKey(): boolean {
+  return Boolean(
+    process.env.AI_GATEWAY_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY,
+  )
 }
 
 loadParentEnvFiles()
@@ -58,35 +57,6 @@ if (!process.env.AI_GATEWAY_API_KEY && process.env.VERCEL_AI_GATEWAY_API_KEY) {
 
 const PORT = Number(process.env.PLAYGROUND_SERVER_PORT ?? 3030)
 const MODEL = process.env.AI_MODEL ?? 'anthropic/claude-sonnet-4-6'
-
-// Every ComponentSpec is a `{ kind, ...fields }` object. The built-in kinds
-// are enumerated here only so the system prompt can list them; the schema
-// itself stays permissive so the agent can also emit custom-registered kinds.
-const KNOWN_KINDS = [
-  'text',
-  'heading',
-  'paragraph',
-  'code',
-  'divider',
-  'image',
-  'card',
-  'stack',
-  'row',
-  'grid',
-  'alert',
-  'badge',
-  'spinner',
-  'progress',
-  'list',
-  'table',
-  'input',
-  'textarea',
-  'select',
-  'checkbox',
-  'form',
-  'button',
-  'link',
-]
 
 const componentSpecSchema = z
   .object({
@@ -134,7 +104,7 @@ tools:
 Each spec is a JSON object: { kind, ...fields }.
 
 Built-in kinds available:
-${KNOWN_KINDS.map((k) => `  - ${k}`).join('\n')}
+${BUILTIN_KINDS.map((k) => `  - ${k}`).join('\n')}
 
 Common spec shapes (partial reference):
   { kind: 'text', content: string }
@@ -296,11 +266,7 @@ const server = Bun.serve({
       return Response.json({
         ok: true,
         model: MODEL,
-        hasApiKey: Boolean(
-          process.env.AI_GATEWAY_API_KEY ||
-            process.env.ANTHROPIC_API_KEY ||
-            process.env.OPENAI_API_KEY,
-        ),
+        hasApiKey: hasAnyApiKey(),
       })
     }
     return new Response('Not Found', { status: 404 })
@@ -309,11 +275,7 @@ const server = Bun.serve({
 
 console.log(`[stream-ui] playground server listening on http://localhost:${server.port}`)
 console.log(`[stream-ui] model: ${MODEL}`)
-if (
-  !process.env.AI_GATEWAY_API_KEY &&
-  !process.env.ANTHROPIC_API_KEY &&
-  !process.env.OPENAI_API_KEY
-) {
+if (!hasAnyApiKey()) {
   console.warn(
     '[stream-ui] WARNING: no AI_GATEWAY_API_KEY / ANTHROPIC_API_KEY / OPENAI_API_KEY set — calls will fail.',
   )
