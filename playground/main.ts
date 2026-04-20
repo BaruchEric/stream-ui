@@ -97,6 +97,109 @@ const sendBtn = chatForm.querySelector('button[type="submit"]') as HTMLButtonEle
 
 console.log(`[stream-ui] playground v${VERSION} ready`)
 
+// ─── panel resizing ─────────────────────────────────────────────────────
+// Three stacked regions (chat, ai, ui) separated by two 6px drag handles.
+// We track the three region heights in pixels and write them back onto the
+// grid's `grid-template-rows`. Sizes persist across reloads via localStorage.
+const grid = document.getElementById('grid') as HTMLDivElement | null
+const PANEL_SIZES_KEY = 'sui:playground:panel-sizes'
+const MIN_PANEL_PX = 80
+
+function loadPanelSizes(): [number, number, number] | null {
+  try {
+    const raw = localStorage.getItem(PANEL_SIZES_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as unknown
+    if (
+      Array.isArray(parsed) &&
+      parsed.length === 3 &&
+      parsed.every((n) => typeof n === 'number' && n >= MIN_PANEL_PX)
+    ) {
+      return parsed as [number, number, number]
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function applyPanelSizes(sizes: [number, number, number]): void {
+  if (!grid) return
+  grid.style.gridTemplateRows = `${sizes[0]}px 6px ${sizes[1]}px 6px ${sizes[2]}px`
+}
+
+function savePanelSizes(sizes: [number, number, number]): void {
+  try {
+    localStorage.setItem(PANEL_SIZES_KEY, JSON.stringify(sizes))
+  } catch {
+    // ignore quota errors
+  }
+}
+
+if (grid) {
+  const saved = loadPanelSizes()
+  if (saved) applyPanelSizes(saved)
+
+  const resizers = grid.querySelectorAll<HTMLDivElement>('.resizer')
+  for (const resizer of resizers) {
+    const index = Number(resizer.dataset.resizeIndex)
+    resizer.addEventListener('pointerdown', (e) => {
+      e.preventDefault()
+      resizer.setPointerCapture(e.pointerId)
+      const regions = grid.querySelectorAll<HTMLElement>('.region')
+      const startHeights: [number, number, number] = [
+        regions[0].getBoundingClientRect().height,
+        regions[1].getBoundingClientRect().height,
+        regions[2].getBoundingClientRect().height,
+      ]
+      const startY = e.clientY
+      resizer.classList.add('dragging')
+      document.body.classList.add('resizing')
+
+      const onMove = (ev: PointerEvent) => {
+        const delta = ev.clientY - startY
+        const next: [number, number, number] = [...startHeights]
+        // Resizer index 0 adjusts panels 0 ↔ 1; index 1 adjusts panels 1 ↔ 2.
+        const aIdx = index
+        const bIdx = index + 1
+        let a = startHeights[aIdx] + delta
+        let b = startHeights[bIdx] - delta
+        if (a < MIN_PANEL_PX) {
+          b -= MIN_PANEL_PX - a
+          a = MIN_PANEL_PX
+        }
+        if (b < MIN_PANEL_PX) {
+          a -= MIN_PANEL_PX - b
+          b = MIN_PANEL_PX
+        }
+        next[aIdx] = Math.max(MIN_PANEL_PX, a)
+        next[bIdx] = Math.max(MIN_PANEL_PX, b)
+        applyPanelSizes(next)
+      }
+
+      const onEnd = (ev: PointerEvent) => {
+        resizer.releasePointerCapture(ev.pointerId)
+        resizer.classList.remove('dragging')
+        document.body.classList.remove('resizing')
+        resizer.removeEventListener('pointermove', onMove)
+        resizer.removeEventListener('pointerup', onEnd)
+        resizer.removeEventListener('pointercancel', onEnd)
+        const regions = grid.querySelectorAll<HTMLElement>('.region')
+        const finalSizes: [number, number, number] = [
+          regions[0].getBoundingClientRect().height,
+          regions[1].getBoundingClientRect().height,
+          regions[2].getBoundingClientRect().height,
+        ]
+        savePanelSizes(finalSizes)
+      }
+
+      resizer.addEventListener('pointermove', onMove)
+      resizer.addEventListener('pointerup', onEnd)
+      resizer.addEventListener('pointercancel', onEnd)
+    })
+  }
+}
+
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 function pushChat(who: 'human' | 'agent' | 'system', text: string): void {

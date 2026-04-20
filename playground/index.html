@@ -12,7 +12,7 @@
       <p>Human → Agent → Streamed UI. Try: <code>make a button</code>, <code>build a form</code>, <code>show a list</code>, <code>card</code>.</p>
     </header>
 
-    <div class="grid">
+    <div class="grid" id="grid">
       <section class="region region-chat">
         <div class="panel-header">
           <h2>CHAT</h2>
@@ -25,10 +25,14 @@
         </form>
       </section>
 
+      <div class="resizer" data-resize-index="0" role="separator" aria-orientation="horizontal" aria-label="Resize chat and AI panels"></div>
+
       <section class="region region-ai">
         <h2>AI</h2>
         <div id="ai-stream" class="scroll" aria-live="polite"></div>
       </section>
+
+      <div class="resizer" data-resize-index="1" role="separator" aria-orientation="horizontal" aria-label="Resize AI and UI panels"></div>
 
       <section class="region region-ui">
         <h2>UI</h2>
