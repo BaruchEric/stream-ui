@@ -6,11 +6,25 @@ export type ButtonVariant = 'default' | 'primary' | 'danger'
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
 export type InputType = 'text' | 'number' | 'email' | 'password' | 'url' | 'tel' | 'search'
 
+export type InputFormat = 'email' | 'phone' | 'url' | 'zip' | 'credit-card'
+
+export type ValidationRules = {
+  required?: boolean
+  pattern?: string
+  minLength?: number
+  maxLength?: number
+  min?: number
+  max?: number
+  errorMessage?: string
+}
+
 export type FormField = {
   name: string
   label: string
   type: InputType
   placeholder?: string
+  format?: InputFormat
+  validation?: ValidationRules
 }
 
 export type SelectOption = {
@@ -52,6 +66,8 @@ export type ComponentSpec =
       placeholder?: string
       value?: string
       action?: string
+      format?: InputFormat
+      validation?: ValidationRules
     }
   | {
       kind: 'textarea'
@@ -61,6 +77,7 @@ export type ComponentSpec =
       rows?: number
       value?: string
       action?: string
+      validation?: ValidationRules
     }
   | {
       kind: 'select'
