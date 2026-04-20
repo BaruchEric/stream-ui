@@ -41,14 +41,34 @@ code {
 
 .grid {
   display: grid;
-  grid-template-rows: minmax(80px, 1fr) 6px minmax(80px, 1fr) 6px minmax(0, 3fr);
+  grid-template-columns: minmax(160px, 1fr) 6px minmax(160px, 1fr);
+  grid-template-rows: minmax(80px, 1fr) 6px minmax(0, 3fr);
+  grid-template-areas:
+    "chat vres ai"
+    "hres hres hres"
+    "ui ui ui";
   gap: 0.5rem;
   flex: 1;
   min-height: 0;
 }
 
+.region-chat {
+  grid-area: chat;
+}
+.region-ai {
+  grid-area: ai;
+}
+.region-ui {
+  grid-area: ui;
+}
+.resizer-v {
+  grid-area: vres;
+}
+.resizer-h {
+  grid-area: hres;
+}
+
 .resizer {
-  cursor: row-resize;
   background: rgba(127, 127, 127, 0.25);
   border-radius: 3px;
   transition: background 120ms ease;
@@ -56,13 +76,25 @@ code {
   touch-action: none;
 }
 
+.resizer-h {
+  cursor: row-resize;
+}
+.resizer-v {
+  cursor: col-resize;
+}
+
 .resizer:hover,
 .resizer.dragging {
   background: rgba(100, 150, 255, 0.6);
 }
 
-body.resizing {
+body.resizing-row {
   cursor: row-resize;
+  user-select: none;
+}
+
+body.resizing-col {
+  cursor: col-resize;
   user-select: none;
 }
 
