@@ -11,6 +11,43 @@ import {
   render,
 } from '../src/index'
 
+// ─── Message state and localStorage ─────────────────────────────────────
+
+type PlaygroundMessage =
+  | { role: 'user'; kind: 'prompt'; text: string }
+  | { role: 'user'; kind: 'form-submit'; name: string; fields: Record<string, unknown> }
+  | { role: 'user'; kind: 'button-click'; action: string }
+  | { role: 'assistant'; kind: 'thinking'; text: string }
+  | { role: 'assistant'; kind: 'render' | 'append'; spec: ComponentSpec | AnySpec }
+
+const STORAGE_KEY = 'sui:playground:messages'
+
+function loadMessages(): PlaygroundMessage[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    return Array.isArray(parsed) ? (parsed as PlaygroundMessage[]) : []
+  } catch {
+    return []
+  }
+}
+
+function saveMessages(messages: PlaygroundMessage[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
+  } catch {
+    // ignore quota errors
+  }
+}
+
+const messages: PlaygroundMessage[] = loadMessages()
+
+function addMessage(msg: PlaygroundMessage): void {
+  messages.push(msg)
+  saveMessages(messages)
+}
+
 // ─── DEMO: register a custom (consumer-defined) component kind ──────────
 // This is what an app would do to add domain-specific UI to stream-ui:
 // declare a spec shape, write a renderer, call register(). The agent (or
