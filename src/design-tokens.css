@@ -1,0 +1,45 @@
+/* AUTO-GENERATED from DESIGN.md — do not edit by hand.
+ * Run `bun run tokens` to regenerate after changing DESIGN.md. */
+:root {
+  --sui-colors-primary: #508cdc;
+  --sui-colors-primary-hover: #5f9beb;
+  --sui-colors-neutral: #7f7f7f;
+  --sui-colors-success: #50b464;
+  --sui-colors-warning: #dcaa46;
+  --sui-colors-error: #dc5a5a;
+  --sui-colors-link: #6496ff;
+  --sui-colors-link-hover: #82afff;
+  --sui-colors-on-primary: #ffffff;
+  --sui-colors-on-error: #ffffff;
+  --sui-typography-h1-font-family: inherit;
+  --sui-typography-h1-font-size: 1.75rem;
+  --sui-typography-h1-line-height: 1.2;
+  --sui-typography-h2-font-family: inherit;
+  --sui-typography-h2-font-size: 1.4rem;
+  --sui-typography-h2-line-height: 1.2;
+  --sui-typography-h3-font-family: inherit;
+  --sui-typography-h3-font-size: 1.15rem;
+  --sui-typography-h3-line-height: 1.2;
+  --sui-typography-body-font-family: inherit;
+  --sui-typography-body-font-size: 1rem;
+  --sui-typography-body-line-height: 1.5;
+  --sui-typography-small-font-family: inherit;
+  --sui-typography-small-font-size: 0.875rem;
+  --sui-typography-small-line-height: 1.4;
+  --sui-typography-code-font-family: ui-monospace, SFMono-Regular, monospace;
+  --sui-typography-code-font-size: 0.875em;
+  --sui-rounded-sm: 0.25rem;
+  --sui-rounded-md: 0.5rem;
+  --sui-rounded-pill: 999px;
+  --sui-spacing-xs: 0.25rem;
+  --sui-spacing-sm: 0.5rem;
+  --sui-spacing-md: 0.75rem;
+  --sui-spacing-lg: 1.5rem;
+  --sui-components-button-primary-background-color: var(--sui-colors-primary);
+  --sui-components-button-primary-text-color: var(--sui-colors-on-primary);
+  --sui-components-button-primary-rounded: var(--sui-rounded-md);
+  --sui-components-button-primary-hover-background-color: var(--sui-colors-primary-hover);
+  --sui-components-button-danger-background-color: var(--sui-colors-error);
+  --sui-components-button-danger-text-color: var(--sui-colors-on-error);
+  --sui-components-button-danger-rounded: var(--sui-rounded-md);
+}

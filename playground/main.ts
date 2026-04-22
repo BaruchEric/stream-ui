@@ -1,3 +1,4 @@
+import '../src/design-tokens.css'
 import '../src/styles.css'
 import {
   type ActionEvent,
