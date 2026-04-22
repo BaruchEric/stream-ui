@@ -2,12 +2,11 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { stepCountIs, streamText, tool } from 'ai'
 import { z } from 'zod'
 import { BUILTIN_KINDS } from '../src/types.js'
+import { resolveModel } from './model.js'
 
 if (!process.env.AI_GATEWAY_API_KEY && process.env.VERCEL_AI_GATEWAY_API_KEY) {
   process.env.AI_GATEWAY_API_KEY = process.env.VERCEL_AI_GATEWAY_API_KEY
 }
-
-const MODEL = process.env.AI_MODEL ?? 'anthropic/claude-sonnet-4-6'
 
 const componentSpecSchema = z
   .object({
@@ -135,6 +134,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
 
+  const model = resolveModel(body as { model?: unknown } | undefined, process.env)
+
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
   res.setHeader('Cache-Control', 'no-cache, no-transform')
   res.setHeader('Connection', 'keep-alive')
@@ -148,7 +149,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const result = streamText({
-      model: MODEL,
+      model,
       system: systemPrompt,
       messages: toCoreMessages(messages),
       tools: {
