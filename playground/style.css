@@ -155,6 +155,41 @@ body.resizing-col {
   padding: 0.25rem 0;
 }
 
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.chat-suggestions:empty {
+  display: none;
+}
+
+.chat-suggestion {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+  background: rgba(100, 150, 255, 0.08);
+  color: inherit;
+  border: 1px solid rgba(100, 150, 255, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chat-suggestion:hover,
+.chat-suggestion:focus {
+  background: rgba(100, 150, 255, 0.18);
+  outline: none;
+}
+
+.chat-suggestion:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .chat-input {
   display: flex;
   gap: 0.5rem;

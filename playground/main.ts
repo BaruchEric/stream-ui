@@ -94,6 +94,35 @@ const chatForm = document.getElementById('chat-form') as HTMLFormElement
 const aiStream = document.getElementById('ai-stream') as HTMLElement
 const uiStage = document.getElementById('ui-stage') as HTMLElement
 const sendBtn = chatForm.querySelector('button[type="submit"]') as HTMLButtonElement
+const chatSuggestions = document.getElementById('chat-suggestions') as HTMLElement
+
+const SUGGESTED_PROMPTS: readonly string[] = [
+  'palette',
+  'make a button',
+  'build a form',
+  'show a table',
+  'alert error',
+  'add a checkbox',
+]
+
+function renderSuggestions(): void {
+  chatSuggestions.replaceChildren(
+    ...SUGGESTED_PROMPTS.map((prompt) => {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'chat-suggestion'
+      btn.textContent = prompt
+      btn.addEventListener('click', () => {
+        if (chatInput.disabled) return
+        chatInput.value = prompt
+        chatForm.requestSubmit()
+      })
+      return btn
+    }),
+  )
+}
+
+renderSuggestions()
 
 console.log(`[stream-ui] playground v${VERSION} ready`)
 
