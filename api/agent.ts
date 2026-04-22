@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { stepCountIs, streamText, tool } from 'ai'
 import { z } from 'zod'
-import { BUILTIN_KINDS } from '../src/types'
+import { BUILTIN_KINDS } from '../src/types.js'
 
 if (!process.env.AI_GATEWAY_API_KEY && process.env.VERCEL_AI_GATEWAY_API_KEY) {
   process.env.AI_GATEWAY_API_KEY = process.env.VERCEL_AI_GATEWAY_API_KEY
