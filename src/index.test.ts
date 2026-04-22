@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ComponentKind, ComponentSpec, Renderer } from './index'
-import { VERSION, builtins, hasKind, listKinds, register, unregister } from './index'
+import { builtins, hasKind, listKinds, register, unregister, VERSION } from './index'
 
 describe('stream-ui', () => {
   it('exports a version', () => {

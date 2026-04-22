@@ -23,7 +23,11 @@
   "publishConfig": {
     "access": "public"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean && cp src/styles.css dist/styles.css",
     "dev": "tsup src/index.ts --format esm --dts --watch --onSuccess \"cp src/styles.css dist/styles.css\"",
@@ -38,20 +42,29 @@
     "format": "biome format --write .",
     "prepublishOnly": "bun run build"
   },
-  "keywords": ["ui", "framework", "ai", "ai-agent", "streaming", "generative-ui"],
+  "keywords": [
+    "ui",
+    "framework",
+    "ai",
+    "ai-agent",
+    "streaming",
+    "generative-ui"
+  ],
   "author": "Eric Baruch",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "^1.9.0",
+    "@biomejs/biome": "^2.4.12",
     "@types/bun": "latest",
     "@vercel/node": "^5.7.13",
     "ai": "^6.0.168",
     "happy-dom": "^20.9.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.0.0",
-    "vite": "^5.0.0",
-    "vitest": "^2.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.9",
+    "vitest": "^4.1.5",
     "zod": "^4.3.6"
   },
-  "trustedDependencies": ["@biomejs/biome"]
+  "trustedDependencies": [
+    "@biomejs/biome"
+  ]
 }

@@ -3,12 +3,12 @@ import {
   type ActionEvent,
   type ActionHandler,
   type AnySpec,
-  type ComponentSpec,
-  VERSION,
   append,
+  type ComponentSpec,
   listKinds,
   register,
   render,
+  VERSION,
 } from '../src/index'
 
 // ─── Message state and localStorage ─────────────────────────────────────
