@@ -9,7 +9,7 @@ function hasAnyApiKey(): boolean {
   )
 }
 
-export default function handler(): Response {
+export default function handler(_req: Request): Response {
   return Response.json({
     ok: true,
     model: MODEL,
