@@ -41,4 +41,20 @@ describe('readSettings', () => {
     localStorage.setItem('sui.layout.preset', 'wat')
     expect(readSettings().layout).toBe('default')
   })
+
+  test('returns defaults when localStorage.getItem throws (private mode)', () => {
+    const orig = Storage.prototype.getItem
+    Storage.prototype.getItem = () => {
+      throw new Error('SecurityError: storage disabled')
+    }
+    try {
+      const s = readSettings()
+      expect(s.model).toBe(DEFAULT_MODEL)
+      expect(s.layout).toBe<LayoutPreset>('default')
+      expect(s.hideAI).toBe(false)
+      expect(s.sizes).toEqual({ default: {}, sideBySide: {}, stacked: {} })
+    } finally {
+      Storage.prototype.getItem = orig
+    }
+  })
 })

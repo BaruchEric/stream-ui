@@ -38,6 +38,14 @@ function readJSON<T>(key: string, fallback: T): T {
   }
 }
 
+function getItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
 function readSizeMap(preset: LayoutPreset): SizeMap {
   const raw = readJSON<unknown>(sizesKey(preset), {})
   if (!raw || typeof raw !== 'object') return {}
@@ -51,15 +59,15 @@ function readSizeMap(preset: LayoutPreset): SizeMap {
 }
 
 export function readSettings(): SuiSettings {
-  const rawLayout = localStorage.getItem(KEY_LAYOUT)
+  const rawLayout = getItem(KEY_LAYOUT)
   const layout: LayoutPreset =
     rawLayout === 'default' || rawLayout === 'sideBySide' || rawLayout === 'stacked'
       ? rawLayout
       : 'default'
   return {
-    model: localStorage.getItem(KEY_MODEL) ?? DEFAULT_MODEL,
+    model: getItem(KEY_MODEL) ?? DEFAULT_MODEL,
     layout,
-    hideAI: localStorage.getItem(KEY_HIDE_AI) === 'true',
+    hideAI: getItem(KEY_HIDE_AI) === 'true',
     sizes: {
       default: readSizeMap('default'),
       sideBySide: readSizeMap('sideBySide'),
