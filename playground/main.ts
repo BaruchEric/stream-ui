@@ -766,10 +766,11 @@ const keywordRoutes: Route[] = [
 async function* realAgent(msgs: PlaygroundMessage[]): AsyncGenerator<AgentStreamEvent> {
   let response: Response
   try {
+    const { model } = readSettings()
     response = await fetch('/api/agent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: msgs }),
+      body: JSON.stringify({ messages: msgs, model }),
     })
   } catch (err) {
     throw new Error(`network: ${err instanceof Error ? err.message : String(err)}`)
