@@ -1,0 +1,39 @@
+name: Vercel Ops
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Vercel CLI args to run (without the leading `vercel`). Examples: "domains ls", "domains add stream.beric.ca", "domains inspect stream.beric.ca", "env ls production", "env add FOO production", "rollback https://stream-xxx.vercel.app", "ls", "logs <deployment-url>"'
+        type: string
+        required: true
+
+concurrency:
+  group: vercel-ops
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_CMD: ${{ inputs.command }}
+    steps:
+      - name: Verify secrets
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::error::Missing one of VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID repo secrets"
+            exit 1
+          fi
+
+      - name: Run Vercel CLI
+        run: |
+          echo "::group::vercel $VERCEL_CMD"
+          npx --yes vercel@latest $VERCEL_CMD --token="$VERCEL_TOKEN"
+          echo "::endgroup::"
