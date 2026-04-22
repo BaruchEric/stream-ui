@@ -1,7 +1,30 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { stepCountIs, streamText, tool } from 'ai'
 import { z } from 'zod'
 import { BUILTIN_KINDS } from '../src/types.js'
+
+// Load DESIGN.md once at cold start. Agents see it as a trailing section of
+// the system prompt so streamed specs honor the project's visual identity.
+function loadDesignGuide(): string | null {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url))
+    for (const candidate of [join(here, '..', 'DESIGN.md'), join(process.cwd(), 'DESIGN.md')]) {
+      try {
+        return readFileSync(candidate, 'utf8')
+      } catch {
+        // try next candidate
+      }
+    }
+  } catch {
+    // fall through
+  }
+  return null
+}
+
+const DESIGN_GUIDE = loadDesignGuide()
 
 if (!process.env.AI_GATEWAY_API_KEY && process.env.VERCEL_AI_GATEWAY_API_KEY) {
   process.env.AI_GATEWAY_API_KEY = process.env.VERCEL_AI_GATEWAY_API_KEY
@@ -101,7 +124,20 @@ Guidelines:
 7. If the latest user message is "[form submit: <name>] key="value" ...", the user
    submitted form <name>. Acknowledge or advance — e.g. render_ui a success card.
 8. If the latest user message is "[button clicked: <action>]", the user clicked a
-   button with that action. Continue the flow accordingly.`
+   button with that action. Continue the flow accordingly.${
+     DESIGN_GUIDE
+       ? `
+
+---
+
+## Design system (from DESIGN.md)
+
+The following is the project's visual identity. Read the tokens to pick
+component variants by *intent*, not hex values. Honor the Do's and Don'ts.
+
+${DESIGN_GUIDE}`
+       : ''
+   }`
 
 type AgentEvent =
   | { type: 'thinking'; text: string }

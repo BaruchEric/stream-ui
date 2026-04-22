@@ -29,9 +29,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean && cp src/styles.css dist/styles.css",
-    "dev": "tsup src/index.ts --format esm --dts --watch --onSuccess \"cp src/styles.css dist/styles.css\"",
-    "playground": "vite",
+    "tokens": "bun run scripts/design-to-css.ts",
+    "build": "bun run tokens && tsup src/index.ts --format esm --dts --clean && bun run scripts/build-styles.ts",
+    "dev": "bun run tokens && tsup src/index.ts --format esm --dts --watch --onSuccess \"bun run scripts/build-styles.ts\"",
+    "playground": "bun run tokens && vite",
     "playground:build": "vite build",
     "playground:server": "bun run --watch playground/server.ts",
     "playground:full": "bun run playground/scripts/run-full.ts",
@@ -62,6 +63,7 @@
     "typescript": "^6.0.3",
     "vite": "^8.0.9",
     "vitest": "^4.1.5",
+    "yaml": "^2.8.3",
     "zod": "^4.3.6"
   },
   "trustedDependencies": [

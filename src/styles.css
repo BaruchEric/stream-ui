@@ -325,19 +325,21 @@
 }
 
 .sui-button-primary {
-  background: rgb(80, 140, 220);
-  color: white;
-  border-color: rgb(80, 140, 220);
+  background: var(--sui-components-button-primary-background-color, rgb(80, 140, 220));
+  color: var(--sui-components-button-primary-text-color, white);
+  border-color: var(--sui-colors-primary, rgb(80, 140, 220));
+  border-radius: var(--sui-components-button-primary-rounded, 0.5rem);
 }
 .sui-button-primary:hover,
 .sui-button-primary:focus {
-  background: rgb(95, 155, 235);
+  background: var(--sui-components-button-primary-hover-background-color, rgb(95, 155, 235));
 }
 
 .sui-button-danger {
-  background: rgb(220, 90, 90);
-  color: white;
-  border-color: rgb(220, 90, 90);
+  background: var(--sui-components-button-danger-background-color, rgb(220, 90, 90));
+  color: var(--sui-components-button-danger-text-color, white);
+  border-color: var(--sui-colors-error, rgb(220, 90, 90));
+  border-radius: var(--sui-components-button-danger-rounded, 0.5rem);
 }
 .sui-button-danger:hover,
 .sui-button-danger:focus {
@@ -345,13 +347,13 @@
 }
 
 .sui-link {
-  color: rgb(100, 150, 255);
+  color: var(--sui-colors-link, rgb(100, 150, 255));
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
 
 .sui-link:hover {
-  color: rgb(130, 175, 255);
+  color: var(--sui-colors-link-hover, rgb(130, 175, 255));
 }
 
 /* ─── unknown-kind fallback ────────────────────────────────────── */
