@@ -28,6 +28,7 @@
     "build": "tsup src/index.ts --format esm --dts --clean && cp src/styles.css dist/styles.css",
     "dev": "tsup src/index.ts --format esm --dts --watch --onSuccess \"cp src/styles.css dist/styles.css\"",
     "playground": "vite",
+    "playground:build": "vite build",
     "playground:server": "bun run --watch playground/server.ts",
     "playground:full": "bun run playground/scripts/run-full.ts",
     "test": "vitest run",
