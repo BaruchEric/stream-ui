@@ -16,6 +16,22 @@ import { stepCountIs, streamText, tool } from 'ai'
 import { z } from 'zod'
 import { BUILTIN_KINDS } from '../src/types'
 
+function loadDesignGuide(): string | null {
+  for (const candidate of [
+    resolve(process.cwd(), 'DESIGN.md'),
+    resolve(import.meta.dir, '..', 'DESIGN.md'),
+  ]) {
+    try {
+      return readFileSync(candidate, 'utf8')
+    } catch {
+      // try next candidate
+    }
+  }
+  return null
+}
+
+const DESIGN_GUIDE = loadDesignGuide()
+
 function loadEnvFile(file: string): void {
   if (!existsSync(file)) return
   for (const line of readFileSync(file, 'utf8').split('\n')) {
@@ -150,7 +166,20 @@ Guidelines:
 7. If the latest user message is "[form submit: <name>] key="value" ...", the user
    submitted form <name>. Acknowledge or advance — e.g. render_ui a success card.
 8. If the latest user message is "[button clicked: <action>]", the user clicked a
-   button with that action. Continue the flow accordingly.`
+   button with that action. Continue the flow accordingly.${
+     DESIGN_GUIDE
+       ? `
+
+---
+
+## Design system (from DESIGN.md)
+
+The following is the project's visual identity. Read the tokens to pick
+component variants by *intent*, not hex values. Honor the Do's and Don'ts.
+
+${DESIGN_GUIDE}`
+       : ''
+   }`
 
 type AgentEvent =
   | { type: 'thinking'; text: string }
