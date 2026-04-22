@@ -11,6 +11,7 @@ import {
   VERSION,
 } from '../src/index'
 import { type LayoutPreset, type ResizerPair, readSettings, writeSettings } from './settings'
+import { mountSettingsPopover } from './settings-ui'
 
 // ─── Message state and localStorage ─────────────────────────────────────
 
@@ -267,6 +268,19 @@ function wireResizers(g: HTMLDivElement): void {
 if (grid) {
   applyLayout(grid)
   wireResizers(grid)
+}
+
+function doLogout(): void {
+  // implemented in Task 10
+}
+
+const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement | null
+const settingsPopover = document.getElementById('settings-popover') as HTMLDivElement | null
+if (settingsBtn && settingsPopover && grid) {
+  mountSettingsPopover(settingsBtn, settingsPopover, {
+    onLayoutChange: () => applyLayout(grid),
+    onLogout: () => doLogout(),
+  })
 }
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
