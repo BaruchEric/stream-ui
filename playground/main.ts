@@ -270,8 +270,24 @@ if (grid) {
   wireResizers(grid)
 }
 
-function doLogout(): void {
-  // implemented in Task 10
+async function doLogout(): Promise<void> {
+  try {
+    await fetch('/api/logout', { method: 'POST', cache: 'no-store' })
+  } catch {
+    // ignore — we still want to reload
+  }
+  try {
+    // Poison Chrome's cached Basic Auth creds: a request with bogus creds
+    // replaces the cache entry so the next navigation re-prompts.
+    await fetch('/', {
+      method: 'GET',
+      cache: 'no-store',
+      headers: { Authorization: `Basic ${btoa('logout:logout')}` },
+    })
+  } catch {
+    // ignore
+  }
+  window.location.reload()
 }
 
 const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement | null
