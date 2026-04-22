@@ -1,3 +1,5 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node'
+
 const MODEL = process.env.AI_MODEL ?? 'anthropic/claude-sonnet-4-6'
 
 function hasAnyApiKey(): boolean {
@@ -9,8 +11,8 @@ function hasAnyApiKey(): boolean {
   )
 }
 
-export default function handler(_req: Request): Response {
-  return Response.json({
+export default function handler(_req: VercelRequest, res: VercelResponse) {
+  res.status(200).json({
     ok: true,
     model: MODEL,
     hasApiKey: hasAnyApiKey(),

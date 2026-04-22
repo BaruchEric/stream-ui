@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { stepCountIs, streamText, tool } from 'ai'
 import { z } from 'zod'
 import { BUILTIN_KINDS } from '../src/types'
@@ -113,88 +114,81 @@ function sseEncode(event: AgentEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`
 }
 
-export const maxDuration = 300
+export const config = {
+  maxDuration: 300,
+}
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 })
+    res.status(405).send('Method Not Allowed')
+    return
   }
 
+  const body = req.body as { prompt?: unknown; messages?: unknown } | undefined
   let messages: PlaygroundMessage[]
-  try {
-    const body = (await req.json()) as { prompt?: unknown; messages?: unknown }
-    if (Array.isArray(body.messages) && body.messages.length > 0) {
-      messages = body.messages as PlaygroundMessage[]
-    } else if (typeof body.prompt === 'string' && body.prompt.trim() !== '') {
-      messages = [{ role: 'user', kind: 'prompt', text: body.prompt }]
-    } else {
-      return new Response('Missing prompt or messages', { status: 400 })
-    }
-  } catch {
-    return new Response('Invalid JSON', { status: 400 })
+  if (body && Array.isArray(body.messages) && body.messages.length > 0) {
+    messages = body.messages as PlaygroundMessage[]
+  } else if (body && typeof body.prompt === 'string' && body.prompt.trim() !== '') {
+    messages = [{ role: 'user', kind: 'prompt', text: body.prompt }]
+  } else {
+    res.status(400).send('Missing prompt or messages')
+    return
   }
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const encoder = new TextEncoder()
-      const send = (event: AgentEvent) => {
-        controller.enqueue(encoder.encode(sseEncode(event)))
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+  res.setHeader('Cache-Control', 'no-cache, no-transform')
+  res.setHeader('Connection', 'keep-alive')
+  res.setHeader('X-Accel-Buffering', 'no')
+  // Hint to Node to flush headers before any chunk arrives
+  res.flushHeaders?.()
+
+  const send = (event: AgentEvent) => {
+    res.write(sseEncode(event))
+  }
+
+  try {
+    const result = streamText({
+      model: MODEL,
+      system: systemPrompt,
+      messages: toCoreMessages(messages),
+      tools: {
+        render_ui: tool({
+          description: 'Render a component, replacing the existing UI.',
+          inputSchema: z.object({ spec: componentSpecSchema }),
+          execute: async () => ({ ok: true }),
+        }),
+        append_ui: tool({
+          description: 'Append a component to the existing UI.',
+          inputSchema: z.object({ spec: componentSpecSchema }),
+          execute: async () => ({ ok: true }),
+        }),
+      },
+      stopWhen: stepCountIs(8),
+    })
+
+    for await (const part of result.fullStream) {
+      if (part.type === 'text-delta') {
+        const text = (part as { text?: string; textDelta?: string }).text ?? ''
+        if (text) send({ type: 'thinking', text })
+      } else if (part.type === 'tool-call') {
+        const input = (part as { input?: { spec?: unknown } }).input
+        const spec = input?.spec
+        if (!spec) continue
+        if (part.toolName === 'render_ui') send({ type: 'render', spec })
+        else if (part.toolName === 'append_ui') send({ type: 'append', spec })
+      } else if (part.type === 'error') {
+        const err = (part as { error?: unknown }).error
+        send({ type: 'error', error: err instanceof Error ? err.message : String(err) })
       }
+    }
 
-      try {
-        const result = streamText({
-          model: MODEL,
-          system: systemPrompt,
-          messages: toCoreMessages(messages),
-          tools: {
-            render_ui: tool({
-              description: 'Render a component, replacing the existing UI.',
-              inputSchema: z.object({ spec: componentSpecSchema }),
-              execute: async () => ({ ok: true }),
-            }),
-            append_ui: tool({
-              description: 'Append a component to the existing UI.',
-              inputSchema: z.object({ spec: componentSpecSchema }),
-              execute: async () => ({ ok: true }),
-            }),
-          },
-          stopWhen: stepCountIs(8),
-        })
-
-        for await (const part of result.fullStream) {
-          if (part.type === 'text-delta') {
-            const text = (part as { text?: string; textDelta?: string }).text ?? ''
-            if (text) send({ type: 'thinking', text })
-          } else if (part.type === 'tool-call') {
-            const input = (part as { input?: { spec?: unknown } }).input
-            const spec = input?.spec
-            if (!spec) continue
-            if (part.toolName === 'render_ui') send({ type: 'render', spec })
-            else if (part.toolName === 'append_ui') send({ type: 'append', spec })
-          } else if (part.type === 'error') {
-            const err = (part as { error?: unknown }).error
-            send({ type: 'error', error: err instanceof Error ? err.message : String(err) })
-          }
-        }
-
-        send({ type: 'done' })
-      } catch (err) {
-        send({
-          type: 'error',
-          error: err instanceof Error ? err.message : String(err),
-        })
-      } finally {
-        controller.close()
-      }
-    },
-  })
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    },
-  })
+    send({ type: 'done' })
+  } catch (err) {
+    send({
+      type: 'error',
+      error: err instanceof Error ? err.message : String(err),
+    })
+  } finally {
+    res.end()
+  }
 }
