@@ -43,3 +43,31 @@
   --sui-components-button-danger-text-color: var(--sui-colors-on-error);
   --sui-components-button-danger-rounded: var(--sui-rounded-md);
 }
+
+.sui-theme-dark {
+  --sui-colors-primary: #7bb0f0;
+  --sui-colors-primary-hover: #92bff5;
+  --sui-colors-neutral: #a8a8a8;
+  --sui-colors-success: #66c67a;
+  --sui-colors-warning: #e8ba5a;
+  --sui-colors-error: #eb7a7a;
+  --sui-colors-link: #8fb4ff;
+  --sui-colors-link-hover: #b0c8ff;
+  --sui-colors-on-primary: #0b1116;
+  --sui-colors-on-error: #0b1116;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.sui-theme-light) {
+    --sui-colors-primary: #7bb0f0;
+    --sui-colors-primary-hover: #92bff5;
+    --sui-colors-neutral: #a8a8a8;
+    --sui-colors-success: #66c67a;
+    --sui-colors-warning: #e8ba5a;
+    --sui-colors-error: #eb7a7a;
+    --sui-colors-link: #8fb4ff;
+    --sui-colors-link-hover: #b0c8ff;
+    --sui-colors-on-primary: #0b1116;
+    --sui-colors-on-error: #0b1116;
+  }
+}

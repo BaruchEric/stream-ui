@@ -952,6 +952,44 @@ clearBtn?.addEventListener('click', () => {
   pushAI('Agent ready.')
 })
 
+// ─── theme switcher ───────────────────────────────────────────────
+// Demonstrates DESIGN.md → CSS-var theming working end-to-end with zero
+// code changes to components. Heritage overrides a handful of semantic
+// tokens inline; system/light/dark toggle the `.sui-theme-*` class that
+// the generator emits alongside the :root block.
+type ThemeKey = 'system' | 'light' | 'dark' | 'heritage'
+const HERITAGE_OVERRIDES: Record<string, string> = {
+  '--sui-colors-primary': '#b8422e',
+  '--sui-colors-primary-hover': '#cb4f37',
+  '--sui-colors-link': '#b8422e',
+  '--sui-colors-link-hover': '#cb4f37',
+  '--sui-colors-on-primary': '#f7f5f2',
+  '--sui-components-button-primary-background-color': '#b8422e',
+  '--sui-components-button-primary-text-color': '#f7f5f2',
+  '--sui-components-button-primary-hover-background-color': '#cb4f37',
+}
+
+function applyTheme(theme: ThemeKey): void {
+  const html = document.documentElement
+  html.classList.remove('sui-theme-light', 'sui-theme-dark', 'sui-theme-heritage')
+  for (const prop of Object.keys(HERITAGE_OVERRIDES)) html.style.removeProperty(prop)
+  if (theme !== 'system') html.classList.add(`sui-theme-${theme}`)
+  if (theme === 'heritage') {
+    for (const [k, v] of Object.entries(HERITAGE_OVERRIDES)) html.style.setProperty(k, v)
+  }
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('#theme-switcher button')) {
+    btn.setAttribute('aria-pressed', btn.dataset.theme === theme ? 'true' : 'false')
+  }
+  localStorage.setItem('sui-theme', theme)
+}
+
+const savedTheme = (localStorage.getItem('sui-theme') as ThemeKey | null) ?? 'system'
+applyTheme(savedTheme)
+document.getElementById('theme-switcher')?.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button[data-theme]') as HTMLButtonElement | null
+  if (btn) applyTheme(btn.dataset.theme as ThemeKey)
+})
+
 // Initial state
 render(
   {

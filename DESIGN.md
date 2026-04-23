@@ -57,6 +57,19 @@ components:
     backgroundColor: "{colors.error}"
     textColor: "{colors.on-error}"
     rounded: "{rounded.md}"
+variants:
+  dark:
+    colors:
+      primary: "#7BB0F0"
+      primary-hover: "#92BFF5"
+      neutral: "#A8A8A8"
+      success: "#66C67A"
+      warning: "#E8BA5A"
+      error: "#EB7A7A"
+      link: "#8FB4FF"
+      link-hover: "#B0C8FF"
+      on-primary: "#0B1116"
+      on-error: "#0B1116"
 ---
 
 ## Overview

@@ -8,8 +8,18 @@
   </head>
   <body>
     <header>
-      <h1>stream-ui</h1>
-      <p>Human → Agent → Streamed UI. Try: <code>make a button</code>, <code>build a form</code>, <code>show a list</code>, <code>card</code>.</p>
+      <div class="header-row">
+        <div>
+          <h1>stream-ui</h1>
+          <p>Human → Agent → Streamed UI. Try: <code>make a button</code>, <code>build a form</code>, <code>show a list</code>, <code>card</code>.</p>
+        </div>
+        <div id="theme-switcher" class="theme-switcher" role="group" aria-label="Theme">
+          <button type="button" data-theme="system" aria-pressed="true">System</button>
+          <button type="button" data-theme="light" aria-pressed="false">Light</button>
+          <button type="button" data-theme="dark" aria-pressed="false">Dark</button>
+          <button type="button" data-theme="heritage" aria-pressed="false">Heritage</button>
+        </div>
+      </div>
     </header>
 
     <div class="grid" id="grid">
