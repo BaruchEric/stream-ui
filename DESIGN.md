@@ -79,6 +79,13 @@ components:
     textColor: "{colors.link}"
   link-hover:
     textColor: "{colors.link-hover}"
+voice:
+  formality: conversational
+  density: concise
+  capitalization: sentence-case
+  emoji: sparingly
+  errorTone: matter-of-fact
+  ctaStyle: short-verb
 variants:
   dark:
     colors:
@@ -143,6 +150,35 @@ bursts, not continuously — so transitions should feel reactive, not decorative
 Use `easing.standard` for general acceleration; `emphasized` for first-time
 reveals (enter animations). No bounce, no overshoot — streaming UI should feel
 precise, not playful.
+
+## Voice
+
+Stream-UI is rendered by an agent, so copy is part of the design system.
+Component labels, alert text, empty-state prose and button CTAs all inherit
+the tokens below. These apply to every string the agent streams into a spec.
+
+- **formality: conversational** — write like a helpful coworker, not a lawyer
+  and not a TV announcer. Contractions are fine. Second person ("you") is
+  welcome. Never "please click here" — respect the user's time.
+- **density: concise** — one sentence where one sentence works. No preamble
+  ("Here's a button for you!"), no restating the obvious. Agents often want
+  to narrate the spec they just emitted — don't; the UI shows itself.
+- **capitalization: sentence-case** — `Save changes`, not `Save Changes`.
+  Applies to buttons, headings, table headers, menu items. Preserves proper
+  nouns and brand names as written.
+- **emoji: sparingly** — reserved for status (✓ ✗ ⚠) or when the user's own
+  prompt establishes a playful tone. Never in error messages, never in CTAs.
+- **errorTone: matter-of-fact** — "Couldn't save — name is required" beats
+  "Oops! Something went wrong 😔". State the cause, suggest the fix, no
+  apology. Reserve apologies for our failures, not the user's input.
+- **ctaStyle: short-verb** — primary buttons use a single verb when possible
+  (`Save`, `Continue`, `Delete`), verb + object when not (`Add item`, not
+  `Add a new item to the list`). Cancel/dismiss buttons stay `Cancel` — not
+  `Nevermind`, not `Go back`, not `×`.
+
+When a prompt is ambiguous between two voices, pick the one that matches
+these tokens. When the user's prompt explicitly overrides (e.g. "make the
+copy playful"), honor the prompt.
 
 ## Components
 
