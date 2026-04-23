@@ -30,3 +30,10 @@ jobs:
 
       - name: Build
         run: bun run build
+
+      # DESIGN.md validation. Fails on structural errors only; warnings
+      # (e.g. contrast below AA, unused tokens) are visible in the job log
+      # but don't block merges. Tighten to `--fail-on warning` once the
+      # team has cleaned the warning surface.
+      - name: Lint DESIGN.md
+        run: bun run lint:design

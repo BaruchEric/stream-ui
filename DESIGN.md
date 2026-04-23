@@ -3,14 +3,14 @@ version: alpha
 name: Stream UI Default
 description: Default theme for stream-ui — neutral, accessible, agent-friendly.
 colors:
-  primary: "#508CDC"
-  primary-hover: "#5F9BEB"
-  neutral: "#7F7F7F"
-  success: "#50B464"
-  warning: "#DCAA46"
-  error: "#DC5A5A"
-  link: "#6496FF"
-  link-hover: "#82AFFF"
+  primary: "#1F6FC7"
+  primary-hover: "#2C7DD4"
+  neutral: "#6B7280"
+  success: "#2E8F48"
+  warning: "#B17A20"
+  error: "#C43D3D"
+  link: "#2F6FC7"
+  link-hover: "#1F5FB5"
   on-primary: "#FFFFFF"
   on-error: "#FFFFFF"
 typography:
@@ -46,6 +46,14 @@ spacing:
   sm: 0.5rem
   md: 0.75rem
   lg: 1.5rem
+motion:
+  duration:
+    fast: 120ms
+    base: 200ms
+    slow: 320ms
+  easing:
+    standard: "cubic-bezier(0.2, 0, 0, 1)"
+    emphasized: "cubic-bezier(0.3, 0, 0, 1)"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
@@ -57,6 +65,33 @@ components:
     backgroundColor: "{colors.error}"
     textColor: "{colors.on-error}"
     rounded: "{rounded.md}"
+  alert-info:
+    backgroundColor: "{colors.primary}"
+  alert-success:
+    backgroundColor: "{colors.success}"
+  alert-warning:
+    backgroundColor: "{colors.warning}"
+  alert-error:
+    backgroundColor: "{colors.error}"
+  badge-default:
+    backgroundColor: "{colors.neutral}"
+  link:
+    textColor: "{colors.link}"
+  link-hover:
+    textColor: "{colors.link-hover}"
+variants:
+  dark:
+    colors:
+      primary: "#7BB0F0"
+      primary-hover: "#92BFF5"
+      neutral: "#A8A8A8"
+      success: "#66C67A"
+      warning: "#E8BA5A"
+      error: "#EB7A7A"
+      link: "#8FB4FF"
+      link-hover: "#B0C8FF"
+      on-primary: "#0B1116"
+      on-error: "#0B1116"
 ---
 
 ## Overview
@@ -92,6 +127,22 @@ than custom CSS.
 
 Three rounded levels: `sm` (inline tags, code blocks), `md` (cards, buttons,
 inputs), and `pill` (badges, progress bars).
+
+## Motion
+
+Stream-UI renders the majority of its UI at agent-cadence — values change in
+bursts, not continuously — so transitions should feel reactive, not decorative.
+
+- **duration.fast (120ms)** — local hover/focus shifts; color/background tweens.
+- **duration.base (200ms)** — progress bar fills, state changes on a single
+  component (e.g. button press).
+- **duration.slow (320ms)** — structural changes (layout reflow, dialog
+  enter/exit). Avoid beyond this; the agent's own streaming already provides
+  the perceived motion.
+
+Use `easing.standard` for general acceleration; `emphasized` for first-time
+reveals (enter animations). No bounce, no overshoot — streaming UI should feel
+precise, not playful.
 
 ## Components
 

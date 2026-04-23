@@ -108,6 +108,31 @@ header {
   background: rgba(220, 60, 60, 0.25);
 }
 
+.settings-theme-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.settings-theme-btn {
+  flex: 1 0 auto;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  background: transparent;
+  color: inherit;
+  border-radius: 0.35rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+.settings-theme-btn[aria-pressed="true"] {
+  background: var(--sui-colors-primary, rgb(80, 140, 220));
+  color: var(--sui-colors-on-primary, white);
+  border-color: var(--sui-colors-primary, rgb(80, 140, 220));
+}
+.settings-theme-btn:hover:not([aria-pressed="true"]) {
+  background: rgba(127, 127, 127, 0.15);
+}
+
 h1 {
   margin: 0 0 0.25rem;
   font-size: 1.5rem;
@@ -412,7 +437,8 @@ body.resizing-col {
 }
 
 .chat-input input:focus {
-  outline: 2px solid rgba(100, 150, 255, 0.5);
+  outline: 2px solid
+    color-mix(in srgb, var(--sui-colors-primary, rgb(100, 150, 255)) 50%, transparent);
   outline-offset: -1px;
 }
 

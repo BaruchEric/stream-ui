@@ -11,7 +11,13 @@ import {
   render,
   VERSION,
 } from '../src/index'
-import { type LayoutPreset, type ResizerPair, readSettings, writeSettings } from './settings'
+import {
+  type LayoutPreset,
+  type ResizerPair,
+  readSettings,
+  type ThemePreset,
+  writeSettings,
+} from './settings'
 import { mountSettingsPopover } from './settings-ui'
 
 // ─── Message state and localStorage ─────────────────────────────────────
@@ -291,11 +297,40 @@ async function doLogout(): Promise<void> {
   window.location.reload()
 }
 
+// ─── theme ───────────────────────────────────────────────────────────────
+// Demonstrates DESIGN.md → CSS-var theming end-to-end with zero code changes
+// to components. Heritage overrides a handful of semantic tokens inline;
+// system/light/dark toggle the `.sui-theme-*` class that the generator emits
+// alongside the :root block.
+const HERITAGE_OVERRIDES: Record<string, string> = {
+  '--sui-colors-primary': '#b8422e',
+  '--sui-colors-primary-hover': '#cb4f37',
+  '--sui-colors-link': '#b8422e',
+  '--sui-colors-link-hover': '#cb4f37',
+  '--sui-colors-on-primary': '#f7f5f2',
+  '--sui-components-button-primary-background-color': '#b8422e',
+  '--sui-components-button-primary-text-color': '#f7f5f2',
+  '--sui-components-button-primary-hover-background-color': '#cb4f37',
+}
+
+function applyTheme(theme: ThemePreset): void {
+  const html = document.documentElement
+  html.classList.remove('sui-theme-light', 'sui-theme-dark', 'sui-theme-heritage')
+  for (const prop of Object.keys(HERITAGE_OVERRIDES)) html.style.removeProperty(prop)
+  if (theme !== 'system') html.classList.add(`sui-theme-${theme}`)
+  if (theme === 'heritage') {
+    for (const [k, v] of Object.entries(HERITAGE_OVERRIDES)) html.style.setProperty(k, v)
+  }
+}
+
+applyTheme(readSettings().theme)
+
 const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement | null
 const settingsPopover = document.getElementById('settings-popover') as HTMLDivElement | null
 if (settingsBtn && settingsPopover && grid) {
   mountSettingsPopover(settingsBtn, settingsPopover, {
     onLayoutChange: () => applyLayout(grid),
+    onThemeChange: (t) => applyTheme(t),
     onLogout: () => doLogout(),
   })
 }

@@ -129,20 +129,20 @@
   font-size: 0.9rem;
 }
 .sui-alert-info {
-  background: rgba(80, 140, 220, 0.15);
-  border-left-color: rgb(80, 140, 220);
+  background: color-mix(in srgb, var(--sui-colors-primary, rgb(80, 140, 220)) 15%, transparent);
+  border-left-color: var(--sui-colors-primary, rgb(80, 140, 220));
 }
 .sui-alert-success {
-  background: rgba(80, 180, 100, 0.15);
-  border-left-color: rgb(80, 180, 100);
+  background: color-mix(in srgb, var(--sui-colors-success, rgb(80, 180, 100)) 15%, transparent);
+  border-left-color: var(--sui-colors-success, rgb(80, 180, 100));
 }
 .sui-alert-warning {
-  background: rgba(220, 170, 70, 0.18);
-  border-left-color: rgb(220, 170, 70);
+  background: color-mix(in srgb, var(--sui-colors-warning, rgb(220, 170, 70)) 18%, transparent);
+  border-left-color: var(--sui-colors-warning, rgb(220, 170, 70));
 }
 .sui-alert-error {
-  background: rgba(220, 90, 90, 0.18);
-  border-left-color: rgb(220, 90, 90);
+  background: color-mix(in srgb, var(--sui-colors-error, rgb(220, 90, 90)) 18%, transparent);
+  border-left-color: var(--sui-colors-error, rgb(220, 90, 90));
 }
 
 .sui-badge {
@@ -155,16 +155,16 @@
   align-self: flex-start;
 }
 .sui-badge-success {
-  background: rgba(80, 180, 100, 0.25);
-  color: rgb(80, 180, 100);
+  background: color-mix(in srgb, var(--sui-colors-success, rgb(80, 180, 100)) 25%, transparent);
+  color: var(--sui-colors-success, rgb(80, 180, 100));
 }
 .sui-badge-warning {
-  background: rgba(220, 170, 70, 0.25);
-  color: rgb(220, 170, 70);
+  background: color-mix(in srgb, var(--sui-colors-warning, rgb(220, 170, 70)) 25%, transparent);
+  color: var(--sui-colors-warning, rgb(220, 170, 70));
 }
 .sui-badge-error {
-  background: rgba(220, 90, 90, 0.25);
-  color: rgb(220, 90, 90);
+  background: color-mix(in srgb, var(--sui-colors-error, rgb(220, 90, 90)) 25%, transparent);
+  color: var(--sui-colors-error, rgb(220, 90, 90));
 }
 
 .sui-spinner {
@@ -206,9 +206,10 @@
 
 .sui-progress-fill {
   height: 100%;
-  background: rgb(100, 150, 255);
+  background: var(--sui-colors-primary, rgb(100, 150, 255));
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: width var(--sui-motion-duration-base, 200ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
 }
 
 .sui-progress-label {
@@ -269,7 +270,8 @@
 .sui-input:focus,
 .sui-textarea:focus,
 .sui-select:focus {
-  outline: 2px solid rgba(100, 150, 255, 0.5);
+  outline: 2px solid
+    color-mix(in srgb, var(--sui-colors-primary, rgb(100, 150, 255)) 50%, transparent);
   outline-offset: -1px;
 }
 
@@ -312,6 +314,13 @@
   border-radius: 0.5rem;
   cursor: pointer;
   align-self: flex-start;
+  transition:
+    background-color var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
+    border-color var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
+    color var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
 }
 
 .sui-button:hover,
@@ -350,6 +359,8 @@
   color: var(--sui-colors-link, rgb(100, 150, 255));
   text-decoration: underline;
   text-underline-offset: 0.15em;
+  transition: color var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
 }
 
 .sui-link:hover {
@@ -360,22 +371,22 @@
 
 .sui-unknown {
   padding: 0.5rem 0.75rem;
-  border: 1px dashed rgba(220, 90, 90, 0.5);
+  border: 1px dashed color-mix(in srgb, var(--sui-colors-error, rgb(220, 90, 90)) 50%, transparent);
   border-radius: 0.5rem;
   font-family: ui-monospace, monospace;
   font-size: 0.8rem;
-  color: rgb(220, 90, 90);
+  color: var(--sui-colors-error, rgb(220, 90, 90));
 }
 
 /* ─── validation errors ────────────────────────────────────────── */
 
 .sui-input[aria-invalid="true"],
 .sui-textarea[aria-invalid="true"] {
-  border-color: rgb(220, 90, 90);
+  border-color: var(--sui-colors-error, rgb(220, 90, 90));
 }
 
 .sui-input-error {
-  color: rgb(220, 90, 90);
+  color: var(--sui-colors-error, rgb(220, 90, 90));
   font-size: 0.85em;
   margin-top: 0.25em;
   display: block;

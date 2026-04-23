@@ -12,20 +12,29 @@ export const MODEL_PRESETS: ReadonlyArray<string> = [
 export type LayoutPreset = 'default' | 'sideBySide' | 'stacked'
 export const LAYOUT_PRESETS: ReadonlyArray<LayoutPreset> = ['default', 'sideBySide', 'stacked']
 
+export type ThemePreset = 'system' | 'light' | 'dark' | 'heritage'
+export const THEME_PRESETS: ReadonlyArray<ThemePreset> = ['system', 'light', 'dark', 'heritage']
+
 export type ResizerPair = 'chat-ai' | 'ai-ui' | 'top-bottom'
 export type SizeMap = Partial<Record<ResizerPair, number>>
 
 export type SuiSettings = {
   model: string
+  theme: ThemePreset
   layout: LayoutPreset
   hideAI: boolean
   sizes: Record<LayoutPreset, SizeMap>
 }
 
 const KEY_MODEL = 'sui.model'
+const KEY_THEME = 'sui.theme'
 const KEY_LAYOUT = 'sui.layout.preset'
 const KEY_HIDE_AI = 'sui.layout.hideAI'
 const sizesKey = (p: LayoutPreset) => `sui.layout.sizes.${p}`
+
+function isThemePreset(v: unknown): v is ThemePreset {
+  return v === 'system' || v === 'light' || v === 'dark' || v === 'heritage'
+}
 
 function readJSON<T>(key: string, fallback: T): T {
   try {
@@ -64,8 +73,11 @@ export function readSettings(): SuiSettings {
     rawLayout === 'default' || rawLayout === 'sideBySide' || rawLayout === 'stacked'
       ? rawLayout
       : 'default'
+  const rawTheme = getItem(KEY_THEME)
+  const theme: ThemePreset = isThemePreset(rawTheme) ? rawTheme : 'system'
   return {
     model: getItem(KEY_MODEL) ?? DEFAULT_MODEL,
+    theme,
     layout,
     hideAI: getItem(KEY_HIDE_AI) === 'true',
     sizes: {
@@ -78,6 +90,7 @@ export function readSettings(): SuiSettings {
 
 export type SettingsPatch = Partial<{
   model: string
+  theme: ThemePreset
   layout: LayoutPreset
   hideAI: boolean
   sizes: Partial<Record<LayoutPreset, SizeMap>>
@@ -86,6 +99,7 @@ export type SettingsPatch = Partial<{
 export function writeSettings(patch: SettingsPatch): void {
   try {
     if (patch.model !== undefined) localStorage.setItem(KEY_MODEL, patch.model)
+    if (patch.theme !== undefined) localStorage.setItem(KEY_THEME, patch.theme)
     if (patch.layout !== undefined) localStorage.setItem(KEY_LAYOUT, patch.layout)
     if (patch.hideAI !== undefined) localStorage.setItem(KEY_HIDE_AI, String(patch.hideAI))
     if (patch.sizes !== undefined) {

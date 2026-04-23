@@ -1,14 +1,14 @@
 /* AUTO-GENERATED from DESIGN.md — do not edit by hand.
  * Run `bun run tokens` to regenerate after changing DESIGN.md. */
 :root {
-  --sui-colors-primary: #508cdc;
-  --sui-colors-primary-hover: #5f9beb;
-  --sui-colors-neutral: #7f7f7f;
-  --sui-colors-success: #50b464;
-  --sui-colors-warning: #dcaa46;
-  --sui-colors-error: #dc5a5a;
-  --sui-colors-link: #6496ff;
-  --sui-colors-link-hover: #82afff;
+  --sui-colors-primary: #1f6fc7;
+  --sui-colors-primary-hover: #2c7dd4;
+  --sui-colors-neutral: #6b7280;
+  --sui-colors-success: #2e8f48;
+  --sui-colors-warning: #b17a20;
+  --sui-colors-error: #c43d3d;
+  --sui-colors-link: #2f6fc7;
+  --sui-colors-link-hover: #1f5fb5;
   --sui-colors-on-primary: #ffffff;
   --sui-colors-on-error: #ffffff;
   --sui-typography-h1-font-family: inherit;
@@ -35,6 +35,11 @@
   --sui-spacing-sm: 0.5rem;
   --sui-spacing-md: 0.75rem;
   --sui-spacing-lg: 1.5rem;
+  --sui-motion-duration-fast: 120ms;
+  --sui-motion-duration-base: 200ms;
+  --sui-motion-duration-slow: 320ms;
+  --sui-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --sui-motion-easing-emphasized: cubic-bezier(0.3, 0, 0, 1);
   --sui-components-button-primary-background-color: var(--sui-colors-primary);
   --sui-components-button-primary-text-color: var(--sui-colors-on-primary);
   --sui-components-button-primary-rounded: var(--sui-rounded-md);
@@ -42,4 +47,39 @@
   --sui-components-button-danger-background-color: var(--sui-colors-error);
   --sui-components-button-danger-text-color: var(--sui-colors-on-error);
   --sui-components-button-danger-rounded: var(--sui-rounded-md);
+  --sui-components-alert-info-background-color: var(--sui-colors-primary);
+  --sui-components-alert-success-background-color: var(--sui-colors-success);
+  --sui-components-alert-warning-background-color: var(--sui-colors-warning);
+  --sui-components-alert-error-background-color: var(--sui-colors-error);
+  --sui-components-badge-default-background-color: var(--sui-colors-neutral);
+  --sui-components-link-text-color: var(--sui-colors-link);
+  --sui-components-link-hover-text-color: var(--sui-colors-link-hover);
+}
+
+.sui-theme-dark {
+  --sui-colors-primary: #7bb0f0;
+  --sui-colors-primary-hover: #92bff5;
+  --sui-colors-neutral: #a8a8a8;
+  --sui-colors-success: #66c67a;
+  --sui-colors-warning: #e8ba5a;
+  --sui-colors-error: #eb7a7a;
+  --sui-colors-link: #8fb4ff;
+  --sui-colors-link-hover: #b0c8ff;
+  --sui-colors-on-primary: #0b1116;
+  --sui-colors-on-error: #0b1116;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.sui-theme-light) {
+    --sui-colors-primary: #7bb0f0;
+    --sui-colors-primary-hover: #92bff5;
+    --sui-colors-neutral: #a8a8a8;
+    --sui-colors-success: #66c67a;
+    --sui-colors-warning: #e8ba5a;
+    --sui-colors-error: #eb7a7a;
+    --sui-colors-link: #8fb4ff;
+    --sui-colors-link-hover: #b0c8ff;
+    --sui-colors-on-primary: #0b1116;
+    --sui-colors-on-error: #0b1116;
+  }
 }

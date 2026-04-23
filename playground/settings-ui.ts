@@ -4,11 +4,14 @@ import {
   type LayoutPreset,
   MODEL_PRESETS,
   readSettings,
+  THEME_PRESETS,
+  type ThemePreset,
   writeSettings,
 } from './settings'
 
 export type PopoverCallbacks = {
   onLayoutChange: () => void
+  onThemeChange: (theme: ThemePreset) => void
   onLogout: () => void
 }
 
@@ -16,6 +19,13 @@ const PRESET_LABELS: Record<LayoutPreset, string> = {
   default: 'Default',
   sideBySide: 'Side-by-side',
   stacked: 'Stacked',
+}
+
+const THEME_LABELS: Record<ThemePreset, string> = {
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+  heritage: 'Heritage',
 }
 
 export function mountSettingsPopover(
@@ -57,6 +67,7 @@ export function mountSettingsPopover(
     const s = readSettings()
     const isCustomModel = !MODEL_PRESETS.includes(s.model)
     popover.replaceChildren(
+      section('Theme', [themeRow(s.theme)]),
       section('Model', [
         modelSelect(s.model, isCustomModel),
         customModelInput(s.model, isCustomModel),
@@ -64,6 +75,28 @@ export function mountSettingsPopover(
       section('Layout', [presetRow(s.layout), hideAIRow(s.hideAI), resetSizesRow(s.layout)]),
       section('Account', [logoutRow()]),
     )
+  }
+
+  function themeRow(current: ThemePreset): HTMLElement {
+    const wrap = document.createElement('div')
+    wrap.className = 'settings-theme-row'
+    wrap.setAttribute('role', 'group')
+    wrap.setAttribute('aria-label', 'Theme')
+    for (const t of THEME_PRESETS) {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'settings-theme-btn'
+      btn.textContent = THEME_LABELS[t]
+      btn.dataset.theme = t
+      btn.setAttribute('aria-pressed', t === current ? 'true' : 'false')
+      btn.addEventListener('click', () => {
+        writeSettings({ theme: t })
+        cb.onThemeChange(t)
+        render()
+      })
+      wrap.appendChild(btn)
+    }
+    return wrap
   }
 
   function section(title: string, children: HTMLElement[]): HTMLElement {
