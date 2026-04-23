@@ -189,6 +189,28 @@ disabled) are expressed as sibling entries with a related key name —
 Valid component properties in this theme: `backgroundColor`, `textColor`,
 `rounded`.
 
+## Custom components
+
+stream-ui's `register(kind, renderer)` API lets consumers add domain-specific
+components. Those renderers should honor the design system by reading the
+CSS custom properties this file generates — there's no separate "register
+with DESIGN.md" step. The pattern is just plain CSS:
+
+```css
+.my-custom-card {
+  background: color-mix(in srgb, var(--sui-colors-neutral) 8%, transparent);
+  border: 1px solid var(--sui-colors-neutral);
+  border-radius: var(--sui-rounded-md);
+  padding: var(--sui-spacing-sm);
+}
+.my-custom-card--urgent {
+  border-left: 3px solid var(--sui-colors-error);
+}
+```
+
+Consumers get theme switching, dark mode, and runtime token overrides for
+free. The `kanban-card` example in the playground uses exactly this pattern.
+
 ## Do's and Don'ts
 
 - **Do** reference semantic tokens (`{colors.error}`) in derived themes instead

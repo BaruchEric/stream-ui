@@ -1,0 +1,78 @@
+name: DESIGN.md diff
+
+# Runs on PRs that touch DESIGN.md and posts a token-level delta as a
+# comment so reviewers can see added/removed/modified tokens without
+# reading a YAML diff by hand. Uses the upstream `@google/design.md diff`
+# command, which understands token paths and reports a structured report.
+
+on:
+  pull_request:
+    paths:
+      - DESIGN.md
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Extract base DESIGN.md
+        run: git show "origin/${{ github.base_ref }}:DESIGN.md" > /tmp/DESIGN.base.md
+
+      - name: Run design.md diff
+        id: diff
+        run: |
+          bunx @google/design.md@latest diff /tmp/DESIGN.base.md DESIGN.md --format=json > /tmp/diff.json || true
+          echo 'report<<__END__' >> "$GITHUB_OUTPUT"
+          cat /tmp/diff.json >> "$GITHUB_OUTPUT"
+          echo '__END__' >> "$GITHUB_OUTPUT"
+
+      - name: Comment token delta
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const raw = fs.readFileSync('/tmp/diff.json', 'utf8')
+            let report
+            try { report = JSON.parse(raw) } catch { report = null }
+            if (!report) {
+              console.log('No parseable diff output; skipping comment.')
+              return
+            }
+            const t = report.tokens ?? {}
+            const rows = []
+            for (const group of ['colors', 'typography', 'rounded', 'spacing', 'motion', 'components']) {
+              const g = t[group]
+              if (!g) continue
+              const added = g.added ?? []
+              const removed = g.removed ?? []
+              const modified = g.modified ?? []
+              if (!added.length && !removed.length && !modified.length) continue
+              rows.push(`**${group}** — +${added.length} added, -${removed.length} removed, ~${modified.length} modified`)
+              if (added.length) rows.push(`  added: \`${added.join('`, `')}\``)
+              if (removed.length) rows.push(`  removed: \`${removed.join('`, `')}\``)
+              if (modified.length) rows.push(`  modified: \`${modified.join('`, `')}\``)
+            }
+            const regression = report.regression === true ? '⚠️ **regression detected**' : ''
+            const body = rows.length
+              ? `### DESIGN.md token delta\n\n${regression}\n\n${rows.join('\n')}\n\n<details><summary>Raw JSON</summary>\n\n\`\`\`json\n${JSON.stringify(report, null, 2)}\n\`\`\`\n\n</details>`
+              : '### DESIGN.md token delta\n\nNo token-level changes detected (prose-only edits).'
+            const { owner, repo } = context.repo
+            const issue_number = context.payload.pull_request.number
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number })
+            const existing = comments.find(c => c.user?.type === 'Bot' && c.body?.startsWith('### DESIGN.md token delta'))
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body })
+            }
