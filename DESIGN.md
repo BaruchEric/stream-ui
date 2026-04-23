@@ -3,14 +3,14 @@ version: alpha
 name: Stream UI Default
 description: Default theme for stream-ui — neutral, accessible, agent-friendly.
 colors:
-  primary: "#508CDC"
-  primary-hover: "#5F9BEB"
-  neutral: "#7F7F7F"
-  success: "#50B464"
-  warning: "#DCAA46"
-  error: "#DC5A5A"
-  link: "#6496FF"
-  link-hover: "#82AFFF"
+  primary: "#1F6FC7"
+  primary-hover: "#2C7DD4"
+  neutral: "#6B7280"
+  success: "#2E8F48"
+  warning: "#B17A20"
+  error: "#C43D3D"
+  link: "#2F6FC7"
+  link-hover: "#1F5FB5"
   on-primary: "#FFFFFF"
   on-error: "#FFFFFF"
 typography:
@@ -65,6 +65,20 @@ components:
     backgroundColor: "{colors.error}"
     textColor: "{colors.on-error}"
     rounded: "{rounded.md}"
+  alert-info:
+    backgroundColor: "{colors.primary}"
+  alert-success:
+    backgroundColor: "{colors.success}"
+  alert-warning:
+    backgroundColor: "{colors.warning}"
+  alert-error:
+    backgroundColor: "{colors.error}"
+  badge-default:
+    backgroundColor: "{colors.neutral}"
+  link:
+    textColor: "{colors.link}"
+  link-hover:
+    textColor: "{colors.link-hover}"
 variants:
   dark:
     colors:

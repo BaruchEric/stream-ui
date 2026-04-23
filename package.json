@@ -30,7 +30,7 @@
   ],
   "scripts": {
     "tokens": "bun run scripts/design-to-css.ts",
-    "lint:design": "bunx @google/design.md@latest lint DESIGN.md",
+    "lint:design": "bun run scripts/lint-design.ts",
     "diff:design": "bunx @google/design.md@latest diff",
     "build": "bun run tokens && tsup src/index.ts --format esm --dts --clean && bun run scripts/build-styles.ts",
     "dev": "bun run tokens && tsup src/index.ts --format esm --dts --watch --onSuccess \"bun run scripts/build-styles.ts\"",
