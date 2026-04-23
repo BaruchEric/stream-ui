@@ -1,4 +1,6 @@
-export const DEFAULT_MODEL = 'anthropic/claude-sonnet-4-6'
+import { DEFAULT_MODEL } from '../api/model'
+
+export { DEFAULT_MODEL }
 
 export const MODEL_PRESETS: ReadonlyArray<string> = [
   'anthropic/claude-sonnet-4-6',
@@ -15,8 +17,17 @@ export const LAYOUT_PRESETS: ReadonlyArray<LayoutPreset> = ['default', 'sideBySi
 export type ThemePreset = 'system' | 'light' | 'dark' | 'heritage'
 export const THEME_PRESETS: ReadonlyArray<ThemePreset> = ['system', 'light', 'dark', 'heritage']
 
-export type ResizerPair = 'chat-ai' | 'ai-ui' | 'top-bottom'
+export const RESIZER_PAIRS = ['chat-ai', 'ai-ui', 'top-bottom'] as const
+export type ResizerPair = (typeof RESIZER_PAIRS)[number]
 export type SizeMap = Partial<Record<ResizerPair, number>>
+
+function isResizerPair(v: unknown): v is ResizerPair {
+  return typeof v === 'string' && (RESIZER_PAIRS as readonly string[]).includes(v)
+}
+
+function isLayoutPreset(v: unknown): v is LayoutPreset {
+  return typeof v === 'string' && (LAYOUT_PRESETS as readonly string[]).includes(v)
+}
 
 export type SuiSettings = {
   model: string
@@ -60,19 +71,14 @@ function readSizeMap(preset: LayoutPreset): SizeMap {
   if (!raw || typeof raw !== 'object') return {}
   const out: SizeMap = {}
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
-    if ((k === 'chat-ai' || k === 'ai-ui' || k === 'top-bottom') && typeof v === 'number') {
-      out[k] = v
-    }
+    if (isResizerPair(k) && typeof v === 'number') out[k] = v
   }
   return out
 }
 
 export function readSettings(): SuiSettings {
   const rawLayout = getItem(KEY_LAYOUT)
-  const layout: LayoutPreset =
-    rawLayout === 'default' || rawLayout === 'sideBySide' || rawLayout === 'stacked'
-      ? rawLayout
-      : 'default'
+  const layout: LayoutPreset = isLayoutPreset(rawLayout) ? rawLayout : 'default'
   const rawTheme = getItem(KEY_THEME)
   const theme: ThemePreset = isThemePreset(rawTheme) ? rawTheme : 'system'
   return {

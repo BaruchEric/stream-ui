@@ -25,13 +25,46 @@ if (r.error) {
   process.exit(2)
 }
 
-// The CLI writes progress text to stdout before the JSON report. Pull
-// out the final JSON object by scanning from the last standalone `{`.
+// The CLI writes progress text to stdout before the JSON report. Scan for the
+// last balanced top-level `{…}` — more robust than substring heuristics when
+// progress lines contain braces or the JSON starts at column 0.
+function extractLastJson(raw: string): string | null {
+  let last: string | null = null
+  let depth = 0
+  let start = -1
+  let inString = false
+  let escaped = false
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i]
+    if (escaped) {
+      escaped = false
+      continue
+    }
+    if (inString) {
+      if (ch === '\\') escaped = true
+      else if (ch === '"') inString = false
+      continue
+    }
+    if (ch === '"') inString = true
+    else if (ch === '{') {
+      if (depth === 0) start = i
+      depth++
+    } else if (ch === '}') {
+      depth--
+      if (depth === 0 && start >= 0) {
+        last = raw.slice(start, i + 1)
+        start = -1
+      }
+    }
+  }
+  return last
+}
+
 const raw = r.stdout.toString()
-const start = raw.lastIndexOf('\n{')
-const jsonText = start >= 0 ? raw.slice(start + 1) : raw
+const jsonText = extractLastJson(raw)
 let report: Report
 try {
+  if (!jsonText) throw new Error('no JSON object found')
   report = JSON.parse(jsonText) as Report
 } catch {
   console.error('[lint:design] could not parse lint output:')

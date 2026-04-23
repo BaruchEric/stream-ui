@@ -24,6 +24,18 @@ export function safeHref(input: unknown): string {
   return 'about:blank'
 }
 
+// True when the (already-validated) href points to an absolute http(s) URL.
+// Relative, hash, query, mailto, tel, and about: URLs are internal.
+export function isExternal(href: string): boolean {
+  try {
+    const url = new URL(href, 'http://_relative_')
+    if (url.origin === 'http://_relative_') return false
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 export function safeImageSrc(input: unknown): string {
   if (typeof input !== 'string') return ''
   const trimmed = input.trim()

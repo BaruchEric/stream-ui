@@ -1,16 +1,5 @@
-import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
-
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const TOKENS = join(ROOT, 'src', 'design-tokens.css')
-
-function run(): { out: string; status: number | null } {
-  const r = spawnSync('bun', ['run', 'scripts/design-to-css.ts'], { cwd: ROOT, encoding: 'utf8' })
-  return { out: readFileSync(TOKENS, 'utf8'), status: r.status }
-}
+import { beforeAll, describe, expect, it } from 'vitest'
+import { generate } from './design-to-css'
 
 describe('design-to-css generator', () => {
   // The generated file is the contract between DESIGN.md and every consumer
@@ -18,9 +7,12 @@ describe('design-to-css generator', () => {
   // specific tokens each downstream selector depends on so a drift in the
   // generator — or an unintended rename in DESIGN.md — fails loudly here
   // instead of showing up as a cosmetic regression in the browser.
+  let out = ''
+  beforeAll(() => {
+    out = generate()
+  })
+
   it('emits :root with every semantic color token styles.css references', () => {
-    const { status, out } = run()
-    expect(status).toBe(0)
     expect(out).toMatch(/^:root \{/m)
     for (const name of [
       '--sui-colors-primary:',
@@ -36,7 +28,6 @@ describe('design-to-css generator', () => {
   })
 
   it('emits motion tokens used by button/link/progress transitions', () => {
-    const { out } = run()
     for (const name of [
       '--sui-motion-duration-fast:',
       '--sui-motion-duration-base:',
@@ -47,21 +38,18 @@ describe('design-to-css generator', () => {
   })
 
   it('resolves token references via var()', () => {
-    const { out } = run()
     expect(out).toContain(
       '--sui-components-button-primary-background-color: var(--sui-colors-primary);',
     )
   })
 
   it('emits dark variant as both class and prefers-color-scheme media query', () => {
-    const { out } = run()
     expect(out).toContain('.sui-theme-dark {')
     expect(out).toContain('@media (prefers-color-scheme: dark) {')
     expect(out).toContain(':root:not(.sui-theme-light) {')
   })
 
   it('lowercases hex values for biome compatibility', () => {
-    const { out } = run()
     // Uppercase hex would fail biome lint; DESIGN.md is authored uppercase.
     expect(out).not.toMatch(/#[0-9A-F]{3,8}\b/)
   })

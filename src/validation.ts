@@ -51,7 +51,9 @@ export function validate(
   }
 
   if (rules?.min !== undefined || rules?.max !== undefined) {
-    const n = Number(value)
+    // Match HTML `<input type="number">` semantics: reject whitespace, hex,
+    // and scientific notation that `Number('1e3')` / `Number('0x10')` accept.
+    const n = /^-?\d+(\.\d+)?$/.test(value) ? Number.parseFloat(value) : Number.NaN
     if (Number.isNaN(n)) return errorMessage ?? 'Must be a number'
     if (rules.min !== undefined && n < rules.min) {
       return errorMessage ?? `Must be at least ${rules.min}`

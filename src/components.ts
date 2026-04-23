@@ -1,8 +1,9 @@
 import { createElement } from './registry'
-import { safeHref, safeImageSrc } from './safe-url'
+import { isExternal, safeHref, safeImageSrc } from './safe-url'
 import type {
   ActionHandler,
   ComponentKind,
+  ComponentSpec,
   InputFormat,
   Renderer,
   SpecOf,
@@ -94,6 +95,14 @@ function bindValidation(
 
 // Fires onAction with { name, value } on every input event when `action` is
 // set — shared by the input and textarea renderers.
+function appendChildren(
+  el: HTMLElement,
+  children: readonly ComponentSpec[],
+  onAction: ActionHandler | undefined,
+): void {
+  for (const child of children) el.appendChild(createElement(child, onAction))
+}
+
 function bindInputAction(
   control: HTMLInputElement | HTMLTextAreaElement,
   name: string,
@@ -165,29 +174,21 @@ export const builtins: BuiltinRenderers = {
       p.textContent = spec.body
       el.appendChild(p)
     }
-    if (spec.children) {
-      for (const child of spec.children) {
-        el.appendChild(createElement(child, onAction))
-      }
-    }
+    if (spec.children) appendChildren(el, spec.children, onAction)
     return el
   },
 
   stack: (spec, onAction) => {
     const el = document.createElement('div')
     el.className = `sui-stack sui-gap-${spec.gap ?? 'md'}`
-    for (const child of spec.children) {
-      el.appendChild(createElement(child, onAction))
-    }
+    appendChildren(el, spec.children, onAction)
     return el
   },
 
   row: (spec, onAction) => {
     const el = document.createElement('div')
     el.className = `sui-row sui-gap-${spec.gap ?? 'md'} sui-align-${spec.align ?? 'start'}`
-    for (const child of spec.children) {
-      el.appendChild(createElement(child, onAction))
-    }
+    appendChildren(el, spec.children, onAction)
     return el
   },
 
@@ -195,9 +196,7 @@ export const builtins: BuiltinRenderers = {
     const el = document.createElement('div')
     el.className = `sui-grid sui-gap-${spec.gap ?? 'md'}`
     el.style.setProperty('--sui-grid-cols', String(spec.columns ?? 2))
-    for (const child of spec.children) {
-      el.appendChild(createElement(child, onAction))
-    }
+    appendChildren(el, spec.children, onAction)
     return el
   },
 
@@ -383,7 +382,9 @@ export const builtins: BuiltinRenderers = {
       e.preventDefault()
       let firstInvalid: HTMLInputElement | null = null
       for (const field of spec.fields) {
-        const input = el.querySelector(`input[name="${field.name}"]`) as HTMLInputElement | null
+        const input = el.querySelector(
+          `input[name="${CSS.escape(field.name)}"]`,
+        ) as HTMLInputElement | null
         if (!input) continue
         const msg = validate(input.value, field.validation, field.format)
         const wrap = input.closest('.sui-input-wrap') as HTMLElement | null
@@ -419,7 +420,7 @@ export const builtins: BuiltinRenderers = {
     const safe = safeHref(spec.href)
     el.href = safe
     el.textContent = spec.label
-    if (/^(https?:)?\/\//.test(safe)) {
+    if (isExternal(safe)) {
       el.target = '_blank'
       el.rel = 'noopener noreferrer'
     }

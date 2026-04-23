@@ -216,15 +216,15 @@ function wireResizers(g: HTMLDivElement): void {
       const tracks = PAIR_TRACKS[layout][pair]
       if (!axis || !tracks) return
 
-      e.preventDefault()
-      resizer.setPointerCapture(e.pointerId)
-      resizer.classList.add('dragging')
-      document.body.classList.add(axis === 'col' ? 'resizing-col' : 'resizing-row')
-
       const [firstClass, secondClass] = PAIR_REGIONS[pair]
       const first = g.querySelector<HTMLElement>(`.${firstClass}`)
       const second = g.querySelector<HTMLElement>(`.${secondClass}`)
       if (!first || !second) return
+
+      e.preventDefault()
+      resizer.setPointerCapture(e.pointerId)
+      resizer.classList.add('dragging')
+      document.body.classList.add(axis === 'col' ? 'resizing-col' : 'resizing-row')
 
       const firstRect = first.getBoundingClientRect()
       const secondRect = second.getBoundingClientRect()
@@ -337,20 +337,20 @@ if (settingsBtn && settingsPopover && grid) {
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
-function pushChat(who: 'human' | 'agent' | 'system', text: string): void {
+function appendLine(container: HTMLElement, className: string, text: string): void {
   const el = document.createElement('div')
-  el.className = `chat-msg chat-${who}`
+  el.className = className
   el.textContent = text
-  chatLog.appendChild(el)
-  chatLog.scrollTop = chatLog.scrollHeight
+  container.appendChild(el)
+  container.scrollTop = container.scrollHeight
+}
+
+function pushChat(who: 'human' | 'agent' | 'system', text: string): void {
+  appendLine(chatLog, `chat-msg chat-${who}`, text)
 }
 
 function pushAI(text: string, variant: 'thinking' | 'normal' | 'action' = 'normal'): void {
-  const el = document.createElement('div')
-  el.className = `ai-line ${variant === 'normal' ? '' : variant}`.trim()
-  el.textContent = text
-  aiStream.appendChild(el)
-  aiStream.scrollTop = aiStream.scrollHeight
+  appendLine(aiStream, `ai-line ${variant === 'normal' ? '' : variant}`.trim(), text)
 }
 
 const onAction: ActionHandler = (event: ActionEvent): void => {
@@ -372,9 +372,7 @@ const onAction: ActionHandler = (event: ActionEvent): void => {
 
   // Skip non-submit field-change actions — they're local state only.
   const p = event.payload as { name?: string; value?: unknown; checked?: unknown } | undefined
-  const isFieldChange =
-    typeof p?.name === 'string' && ('value' in (p ?? {}) || 'checked' in (p ?? {}))
-  if (isFieldChange) return
+  if (p && typeof p.name === 'string' && ('value' in p || 'checked' in p)) return
 
   addMessage({ role: 'user', kind: 'button-click', action: event.action })
   void runAgent()
@@ -833,12 +831,19 @@ async function* realAgent(msgs: PlaygroundMessage[]): AsyncGenerator<AgentStream
 
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
+  // Cap SSE buffer so a misbehaving server can't balloon memory while we wait
+  // for an event separator. 1 MB is plenty for any single event we expect.
+  const MAX_BUFFER = 1 << 20
   let buffer = ''
 
   while (true) {
     const { done, value } = await reader.read()
     if (done) break
     buffer += decoder.decode(value, { stream: true })
+    if (buffer.length > MAX_BUFFER) {
+      reader.cancel().catch(() => {})
+      throw new Error(`SSE buffer exceeded ${MAX_BUFFER} bytes without event separator`)
+    }
     let split = buffer.indexOf('\n\n')
     while (split !== -1) {
       const chunk = buffer.slice(0, split)
@@ -1004,34 +1009,23 @@ if (agentMode === 'auto') {
   pushAI(agentMode === 'llm' ? 'Forced LLM mode.' : 'Forced mock mode.', 'thinking')
 }
 
+const WELCOME_SPEC: ComponentSpec = {
+  kind: 'card',
+  title: 'Welcome to stream-ui',
+  body: 'Type a prompt in CHAT. Type "palette" to see every component at once. Try: "make a button", "alert error", "show a table", "add a checkbox".',
+}
+
 const clearBtn = document.getElementById('chat-clear') as HTMLButtonElement | null
 clearBtn?.addEventListener('click', () => {
   messages.length = 0
   saveMessages(messages)
   chatLog.innerHTML = ''
   aiStream.innerHTML = ''
-  render(
-    {
-      kind: 'card',
-      title: 'Welcome to stream-ui',
-      body: 'Type a prompt in CHAT. Type "palette" to see every component at once.',
-    },
-    uiStage,
-    onAction,
-  )
+  render(WELCOME_SPEC, uiStage, onAction)
   pushChat('system', 'session cleared')
   pushAI('Agent ready.')
 })
 
-// Initial state
-render(
-  {
-    kind: 'card',
-    title: 'Welcome to stream-ui',
-    body: 'Type a prompt in CHAT. Type "palette" to see every component at once. Try: "make a button", "alert error", "show a table", "add a checkbox".',
-  },
-  uiStage,
-  onAction,
-)
+render(WELCOME_SPEC, uiStage, onAction)
 pushAI('Agent ready. Type "palette" to see all components.')
 pushChat('system', 'session started')
