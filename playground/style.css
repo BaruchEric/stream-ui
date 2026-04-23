@@ -245,7 +245,8 @@ body.resizing-col {
 }
 
 .chat-input input:focus {
-  outline: 2px solid rgba(100, 150, 255, 0.5);
+  outline: 2px solid
+    color-mix(in srgb, var(--sui-colors-primary, rgb(100, 150, 255)) 50%, transparent);
   outline-offset: -1px;
 }
 
