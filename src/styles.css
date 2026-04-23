@@ -208,7 +208,8 @@
   height: 100%;
   background: var(--sui-colors-primary, rgb(100, 150, 255));
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: width var(--sui-motion-duration-base, 200ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
 }
 
 .sui-progress-label {
@@ -313,6 +314,13 @@
   border-radius: 0.5rem;
   cursor: pointer;
   align-self: flex-start;
+  transition:
+    background-color var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
+    border-color var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
+    color var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
 }
 
 .sui-button:hover,
@@ -351,6 +359,8 @@
   color: var(--sui-colors-link, rgb(100, 150, 255));
   text-decoration: underline;
   text-underline-offset: 0.15em;
+  transition: color var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
 }
 
 .sui-link:hover {

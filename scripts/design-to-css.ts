@@ -45,7 +45,7 @@ function normalizeValue(value: string): string {
   return value.replace(/#[0-9A-Fa-f]{3,8}\b/g, (h) => h.toLowerCase())
 }
 
-const TOKEN_GROUPS = ['colors', 'typography', 'rounded', 'spacing', 'components'] as const
+const TOKEN_GROUPS = ['colors', 'typography', 'rounded', 'spacing', 'motion', 'components'] as const
 
 function collectVars(source: Record<string, unknown>): string[] {
   const out: string[] = []

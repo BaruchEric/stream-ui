@@ -46,6 +46,14 @@ spacing:
   sm: 0.5rem
   md: 0.75rem
   lg: 1.5rem
+motion:
+  duration:
+    fast: 120ms
+    base: 200ms
+    slow: 320ms
+  easing:
+    standard: "cubic-bezier(0.2, 0, 0, 1)"
+    emphasized: "cubic-bezier(0.3, 0, 0, 1)"
 components:
   button-primary:
     backgroundColor: "{colors.primary}"
@@ -105,6 +113,22 @@ than custom CSS.
 
 Three rounded levels: `sm` (inline tags, code blocks), `md` (cards, buttons,
 inputs), and `pill` (badges, progress bars).
+
+## Motion
+
+Stream-UI renders the majority of its UI at agent-cadence — values change in
+bursts, not continuously — so transitions should feel reactive, not decorative.
+
+- **duration.fast (120ms)** — local hover/focus shifts; color/background tweens.
+- **duration.base (200ms)** — progress bar fills, state changes on a single
+  component (e.g. button press).
+- **duration.slow (320ms)** — structural changes (layout reflow, dialog
+  enter/exit). Avoid beyond this; the agent's own streaming already provides
+  the perceived motion.
+
+Use `easing.standard` for general acceleration; `emphasized` for first-time
+reveals (enter animations). No bounce, no overshoot — streaming UI should feel
+precise, not playful.
 
 ## Components
 
