@@ -4,18 +4,18 @@ import {
   type ActionEvent,
   type ActionHandler,
   type AnySpec,
-  append,
   type ComponentSpec,
+  VERSION,
+  append,
   listKinds,
   register,
   render,
-  VERSION,
 } from '../src/index'
 import {
   type LayoutPreset,
   type ResizerPair,
-  readSettings,
   type ThemePreset,
+  readSettings,
   writeSettings,
 } from './settings'
 import { mountSettingsPopover } from './settings-ui'

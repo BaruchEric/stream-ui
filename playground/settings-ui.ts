@@ -1,11 +1,11 @@
 import {
-  clearSizes,
   LAYOUT_PRESETS,
   type LayoutPreset,
   MODEL_PRESETS,
-  readSettings,
   THEME_PRESETS,
   type ThemePreset,
+  clearSizes,
+  readSettings,
   writeSettings,
 } from './settings'
 

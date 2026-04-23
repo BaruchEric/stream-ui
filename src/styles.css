@@ -314,12 +314,11 @@
   border-radius: 0.5rem;
   cursor: pointer;
   align-self: flex-start;
-  transition:
-    background-color var(--sui-motion-duration-fast, 120ms)
-    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
-    border-color var(--sui-motion-duration-fast, 120ms)
-    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)),
-    color var(--sui-motion-duration-fast, 120ms)
+  transition: background-color var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)), border-color
+    var(--sui-motion-duration-fast, 120ms)
+    var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1)), color
+    var(--sui-motion-duration-fast, 120ms)
     var(--sui-motion-easing-standard, cubic-bezier(0.2, 0, 0, 1));
 }
 
