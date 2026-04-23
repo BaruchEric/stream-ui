@@ -77,26 +77,49 @@ export function mountSettingsPopover(
     )
   }
 
-  function themeRow(current: ThemePreset): HTMLElement {
+  function toggleGroup<T extends string>(opts: {
+    wrapClass: string
+    wrapRole: string
+    wrapLabel?: string
+    buttonClass?: string
+    buttonRole?: string
+    values: readonly T[]
+    labels: Record<T, string>
+    current: T
+    onPick: (value: T) => void
+  }): HTMLElement {
     const wrap = document.createElement('div')
-    wrap.className = 'settings-theme-row'
-    wrap.setAttribute('role', 'group')
-    wrap.setAttribute('aria-label', 'Theme')
-    for (const t of THEME_PRESETS) {
+    wrap.className = opts.wrapClass
+    wrap.setAttribute('role', opts.wrapRole)
+    if (opts.wrapLabel) wrap.setAttribute('aria-label', opts.wrapLabel)
+    for (const v of opts.values) {
       const btn = document.createElement('button')
       btn.type = 'button'
-      btn.className = 'settings-theme-btn'
-      btn.textContent = THEME_LABELS[t]
-      btn.dataset.theme = t
-      btn.setAttribute('aria-pressed', t === current ? 'true' : 'false')
-      btn.addEventListener('click', () => {
-        writeSettings({ theme: t })
-        cb.onThemeChange(t)
-        render()
-      })
+      if (opts.buttonClass) btn.className = opts.buttonClass
+      if (opts.buttonRole) btn.setAttribute('role', opts.buttonRole)
+      btn.textContent = opts.labels[v]
+      btn.setAttribute('aria-pressed', v === opts.current ? 'true' : 'false')
+      btn.addEventListener('click', () => opts.onPick(v))
       wrap.appendChild(btn)
     }
     return wrap
+  }
+
+  function themeRow(current: ThemePreset): HTMLElement {
+    return toggleGroup<ThemePreset>({
+      wrapClass: 'settings-theme-row',
+      wrapRole: 'group',
+      wrapLabel: 'Theme',
+      buttonClass: 'settings-theme-btn',
+      values: THEME_PRESETS,
+      labels: THEME_LABELS,
+      current,
+      onPick: (t) => {
+        writeSettings({ theme: t })
+        cb.onThemeChange(t)
+        render()
+      },
+    })
   }
 
   function section(title: string, children: HTMLElement[]): HTMLElement {
@@ -140,37 +163,35 @@ export function mountSettingsPopover(
     input.placeholder = 'provider/model-slug'
     input.value = isCustom ? current : ''
     input.hidden = !isCustom
-    input.addEventListener('input', () => {
-      writeSettings({ model: input.value.trim() })
+    // Persist on blur or Enter so we don't write to localStorage per keystroke
+    // (which also mid-typing leaves invalid partial slugs like 'ant' in storage).
+    const commit = () => writeSettings({ model: input.value.trim() })
+    input.addEventListener('blur', commit)
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') commit()
     })
     return input
   }
 
   function presetRow(current: LayoutPreset): HTMLElement {
-    const wrap = document.createElement('div')
-    wrap.className = 'settings-layout-presets'
-    wrap.setAttribute('role', 'radiogroup')
-    for (const p of LAYOUT_PRESETS) {
-      const b = document.createElement('button')
-      b.type = 'button'
-      b.textContent = PRESET_LABELS[p]
-      b.setAttribute('role', 'radio')
-      b.setAttribute('aria-pressed', String(p === current))
-      b.addEventListener('click', () => {
+    return toggleGroup<LayoutPreset>({
+      wrapClass: 'settings-layout-presets',
+      wrapRole: 'radiogroup',
+      buttonRole: 'radio',
+      values: LAYOUT_PRESETS,
+      labels: PRESET_LABELS,
+      current,
+      onPick: (p) => {
         writeSettings({ layout: p })
         render()
         cb.onLayoutChange()
-      })
-      wrap.appendChild(b)
-    }
-    return wrap
+      },
+    })
   }
 
   function hideAIRow(current: boolean): HTMLElement {
     const label = document.createElement('label')
-    label.style.display = 'flex'
-    label.style.alignItems = 'center'
-    label.style.gap = '0.4rem'
+    label.className = 'settings-hide-ai-row'
     const box = document.createElement('input')
     box.type = 'checkbox'
     box.checked = current

@@ -17,13 +17,12 @@
 import { builtins } from './components'
 import { createElement, register } from './registry'
 import type { ActionHandler, AnySpec, ComponentSpec, Renderer } from './types'
+import { BUILTIN_KINDS } from './types'
 
 // Auto-register every built-in on module load. Consumers can call
 // `unregister('button')` afterward if they want to disable a built-in.
-// The cast widens each per-kind Renderer<SpecOf<K>> to the registry's
-// permissive Renderer type — runtime dispatch only cares about `kind`.
-for (const [kind, renderer] of Object.entries(builtins) as Array<[string, Renderer]>) {
-  register(kind, renderer)
+for (const kind of BUILTIN_KINDS) {
+  register(kind, builtins[kind] as Renderer)
 }
 
 export const VERSION = '0.7.0'
