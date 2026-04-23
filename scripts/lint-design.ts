@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 /**
  * Runs @google/design.md lint on DESIGN.md, prints a readable summary,
- * and exits non-zero when structural errors are present.
+ * and exits non-zero when errors OR warnings are present.
  *
- * Warnings are surfaced but do NOT fail the build — they typically
- * represent design-quality findings (contrast, unused tokens) that are
- * better treated as review signals than merge gates. Tighten to fail
- * on warnings when the team has cleaned the backlog.
+ * Since the DESIGN.md baseline is currently at 0/0, any new warning is a
+ * regression — unused tokens, failing WCAG contrast, etc. Block those at
+ * PR time instead of letting them accumulate. If a warning becomes
+ * intentional (rare), fix the root cause or relax this script.
  */
 import { spawnSync } from 'node:child_process'
 
@@ -53,7 +53,9 @@ console.log(
   `\nSummary: ${summary.errors} error(s), ${summary.warnings} warning(s), ${summary.infos} info.`,
 )
 
-if (summary.errors > 0) {
-  console.error('\n[lint:design] structural errors — failing build.')
+if (summary.errors > 0 || summary.warnings > 0) {
+  console.error(
+    `\n[lint:design] ${summary.errors} error(s) + ${summary.warnings} warning(s) — failing build.`,
+  )
   process.exit(1)
 }

@@ -501,34 +501,41 @@ body.resizing-col {
   font-style: italic;
 }
 
-/* ─── consumer-registered example: kanban-card ─────────────────────── */
+/* ─── consumer-registered example: kanban-card ─────────────────────────
+ * Custom components registered via stream-ui's `register()` API can honor
+ * the design system by reading DESIGN.md tokens directly — no extra spec
+ * surface required. Consumers write plain CSS against `--sui-colors-*`
+ * / `--sui-rounded-*` / `--sui-spacing-*` vars and get theme switching,
+ * dark mode, and per-app overrides for free.
+ */
 
 .kanban-card {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  border: 1px solid rgba(127, 127, 127, 0.4);
+  gap: var(--sui-spacing-xs, 0.4rem);
+  border: 1px solid
+    color-mix(in srgb, var(--sui-colors-neutral, rgb(127, 127, 127)) 40%, transparent);
   border-left: 3px solid;
-  border-radius: 0.5rem;
-  padding: 0.6rem 0.85rem;
-  background: rgba(127, 127, 127, 0.05);
+  border-radius: var(--sui-rounded-md, 0.5rem);
+  padding: var(--sui-spacing-sm, 0.6rem) var(--sui-spacing-md, 0.85rem);
+  background: color-mix(in srgb, var(--sui-colors-neutral, rgb(127, 127, 127)) 8%, transparent);
 }
 
 .kanban-todo {
-  border-left-color: rgb(180, 180, 180);
+  border-left-color: var(--sui-colors-neutral, rgb(180, 180, 180));
 }
 .kanban-doing {
-  border-left-color: rgb(220, 170, 70);
+  border-left-color: var(--sui-colors-warning, rgb(220, 170, 70));
 }
 .kanban-done {
-  border-left-color: rgb(80, 180, 100);
+  border-left-color: var(--sui-colors-success, rgb(80, 180, 100));
 }
 
 .kanban-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: var(--sui-spacing-sm, 0.5rem);
 }
 
 .kanban-title {
@@ -540,18 +547,18 @@ body.resizing-col {
   letter-spacing: 0.1em;
   font-weight: 700;
   padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-  background: rgba(127, 127, 127, 0.2);
+  border-radius: var(--sui-rounded-pill, 999px);
+  background: color-mix(in srgb, var(--sui-colors-neutral, rgb(127, 127, 127)) 20%, transparent);
 }
 
 .kanban-todo .kanban-status {
-  color: rgb(180, 180, 180);
+  color: var(--sui-colors-neutral, rgb(180, 180, 180));
 }
 .kanban-doing .kanban-status {
-  color: rgb(220, 170, 70);
+  color: var(--sui-colors-warning, rgb(220, 170, 70));
 }
 .kanban-done .kanban-status {
-  color: rgb(80, 180, 100);
+  color: var(--sui-colors-success, rgb(80, 180, 100));
 }
 
 .kanban-assignee {
