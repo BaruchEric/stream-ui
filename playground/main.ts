@@ -11,6 +11,14 @@ import {
   render,
   VERSION,
 } from '../src/index'
+import {
+  type LayoutPreset,
+  type ResizerPair,
+  readSettings,
+  type ThemePreset,
+  writeSettings,
+} from './settings'
+import { mountSettingsPopover } from './settings-ui'
 
 // ─── Message state and localStorage ─────────────────────────────────────
 
@@ -127,124 +135,111 @@ renderSuggestions()
 
 console.log(`[stream-ui] playground v${VERSION} ready`)
 
-// ─── panel resizing ─────────────────────────────────────────────────────
-// Layout: CHAT and AI sit side-by-side on top; UI spans the full width
-// below. The vertical handle between CHAT and AI tunes the top row's
-// column split; the horizontal handle between the top row and UI tunes
-// the overall row split. Both sizes persist in localStorage.
+// ─── layout engine ───────────────────────────────────────────────────────
 const grid = document.getElementById('grid') as HTMLDivElement | null
-const PANEL_SIZES_KEY = 'sui:playground:panel-sizes-v2'
-const MIN_PANEL_PX = 80
 
-type PanelSizes = {
-  colChat: number
-  colAi: number
-  rowTop: number
-  rowUi: number
+const MIN_FRACTION = 0.08
+
+type Axis = 'row' | 'col'
+
+// For each preset, declare which pair each resizer controls and on what axis.
+const PAIR_AXIS: Record<LayoutPreset, Partial<Record<ResizerPair, Axis>>> = {
+  default: { 'chat-ai': 'col', 'top-bottom': 'row' },
+  sideBySide: { 'chat-ai': 'col', 'ai-ui': 'col' },
+  stacked: { 'chat-ai': 'row', 'ai-ui': 'row' },
 }
 
-function loadPanelSizes(): PanelSizes | null {
-  try {
-    const raw = localStorage.getItem(PANEL_SIZES_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<PanelSizes>
-    if (
-      typeof parsed.colChat === 'number' &&
-      typeof parsed.colAi === 'number' &&
-      typeof parsed.rowTop === 'number' &&
-      typeof parsed.rowUi === 'number' &&
-      parsed.colChat >= MIN_PANEL_PX &&
-      parsed.colAi >= MIN_PANEL_PX &&
-      parsed.rowTop >= MIN_PANEL_PX &&
-      parsed.rowUi >= MIN_PANEL_PX
-    ) {
-      return parsed as PanelSizes
+// For each pair on each preset, list the two CSS custom-property track names
+// (first + second region) that participate in the drag.
+const PAIR_TRACKS: Record<LayoutPreset, Partial<Record<ResizerPair, [string, string]>>> = {
+  default: {
+    'chat-ai': ['--col-chat', '--col-ai'],
+    'top-bottom': ['--row-top', '--row-ui'],
+  },
+  sideBySide: {
+    'chat-ai': ['--col-chat', '--col-ai'],
+    'ai-ui': ['--col-ai', '--col-ui'],
+  },
+  stacked: {
+    'chat-ai': ['--row-chat', '--row-ai'],
+    'ai-ui': ['--row-ai', '--row-ui'],
+  },
+}
+
+// Which two regions (by CSS class fragment) each pair resizes.
+const PAIR_REGIONS: Record<ResizerPair, [string, string]> = {
+  'chat-ai': ['region-chat', 'region-ai'],
+  'ai-ui': ['region-ai', 'region-ui'],
+  'top-bottom': ['region-chat', 'region-ui'], // "top" is chat row, "bottom" is ui
+}
+
+function applyLayout(g: HTMLDivElement): void {
+  const s = readSettings()
+  g.dataset.layout = s.layout
+  if (s.hideAI) g.dataset.hideAi = ''
+  else delete g.dataset.hideAi
+
+  // apply sizes as CSS custom properties (fractions as fr)
+  const saved = s.sizes[s.layout]
+  const axisMap = PAIR_AXIS[s.layout]
+  for (const [pair, tracks] of Object.entries(PAIR_TRACKS[s.layout]) as [
+    ResizerPair,
+    [string, string],
+  ][]) {
+    const v = saved[pair]
+    if (typeof v === 'number' && v > 0 && v < 1) {
+      g.style.setProperty(tracks[0], `${v}fr`)
+      g.style.setProperty(tracks[1], `${1 - v}fr`)
+    } else {
+      g.style.removeProperty(tracks[0])
+      g.style.removeProperty(tracks[1])
     }
-    return null
-  } catch {
-    return null
+  }
+
+  // axis classes on resizers (used only for cursor styling; CSS handles display)
+  for (const r of g.querySelectorAll<HTMLDivElement>('.resizer')) {
+    const pair = r.dataset.pair as ResizerPair | undefined
+    r.classList.remove('axis-row', 'axis-col')
+    if (!pair) continue
+    const axis = axisMap[pair]
+    if (axis) r.classList.add(`axis-${axis}`)
   }
 }
 
-function applyPanelSizes(sizes: PanelSizes): void {
-  if (!grid) return
-  grid.style.gridTemplateColumns = `${sizes.colChat}px 6px ${sizes.colAi}px`
-  grid.style.gridTemplateRows = `${sizes.rowTop}px 6px ${sizes.rowUi}px`
-}
-
-function savePanelSizes(sizes: PanelSizes): void {
-  try {
-    localStorage.setItem(PANEL_SIZES_KEY, JSON.stringify(sizes))
-  } catch {
-    // ignore quota errors
-  }
-}
-
-function measurePanelSizes(): PanelSizes | null {
-  if (!grid) return null
-  const chat = grid.querySelector<HTMLElement>('.region-chat')
-  const ai = grid.querySelector<HTMLElement>('.region-ai')
-  const ui = grid.querySelector<HTMLElement>('.region-ui')
-  if (!chat || !ai || !ui) return null
-  const chatRect = chat.getBoundingClientRect()
-  return {
-    colChat: chatRect.width,
-    colAi: ai.getBoundingClientRect().width,
-    rowTop: chatRect.height,
-    rowUi: ui.getBoundingClientRect().height,
-  }
-}
-
-// Clamp two adjacent panel sizes so neither drops below `min`. When one hits
-// the floor, the other absorbs the remainder so the combined size stays put.
-function clampPair(a: number, b: number, min: number): [number, number] {
-  let x = a
-  let y = b
-  if (x < min) {
-    y -= min - x
-    x = min
-  }
-  if (y < min) {
-    x -= min - y
-    y = min
-  }
-  return [Math.max(min, x), Math.max(min, y)]
-}
-
-if (grid) {
-  const saved = loadPanelSizes()
-  if (saved) applyPanelSizes(saved)
-
-  const resizers = grid.querySelectorAll<HTMLDivElement>('.resizer')
-  for (const resizer of resizers) {
-    const axis = resizer.dataset.resizeAxis as 'col' | 'row'
+function wireResizers(g: HTMLDivElement): void {
+  for (const resizer of g.querySelectorAll<HTMLDivElement>('.resizer')) {
     resizer.addEventListener('pointerdown', (e) => {
+      const pair = resizer.dataset.pair as ResizerPair | undefined
+      if (!pair) return
+      const layout = (g.dataset.layout as LayoutPreset) ?? 'default'
+      const axis = PAIR_AXIS[layout][pair]
+      const tracks = PAIR_TRACKS[layout][pair]
+      if (!axis || !tracks) return
+
       e.preventDefault()
       resizer.setPointerCapture(e.pointerId)
-      const start = measurePanelSizes()
-      if (!start) return
-      const startCoord = axis === 'col' ? e.clientX : e.clientY
       resizer.classList.add('dragging')
       document.body.classList.add(axis === 'col' ? 'resizing-col' : 'resizing-row')
+
+      const [firstClass, secondClass] = PAIR_REGIONS[pair]
+      const first = g.querySelector<HTMLElement>(`.${firstClass}`)
+      const second = g.querySelector<HTMLElement>(`.${secondClass}`)
+      if (!first || !second) return
+
+      const firstRect = first.getBoundingClientRect()
+      const secondRect = second.getBoundingClientRect()
+      const totalPx =
+        axis === 'col' ? firstRect.width + secondRect.width : firstRect.height + secondRect.height
+      const startFirstPx = axis === 'col' ? firstRect.width : firstRect.height
+      const startCoord = axis === 'col' ? e.clientX : e.clientY
 
       const onMove = (ev: PointerEvent) => {
         const coord = axis === 'col' ? ev.clientX : ev.clientY
         const delta = coord - startCoord
-        const next: PanelSizes = { ...start }
-        if (axis === 'col') {
-          const [colChat, colAi] = clampPair(
-            start.colChat + delta,
-            start.colAi - delta,
-            MIN_PANEL_PX,
-          )
-          next.colChat = colChat
-          next.colAi = colAi
-        } else {
-          const [rowTop, rowUi] = clampPair(start.rowTop + delta, start.rowUi - delta, MIN_PANEL_PX)
-          next.rowTop = rowTop
-          next.rowUi = rowUi
-        }
-        applyPanelSizes(next)
+        let nextFirst = (startFirstPx + delta) / totalPx
+        nextFirst = Math.max(MIN_FRACTION, Math.min(1 - MIN_FRACTION, nextFirst))
+        g.style.setProperty(tracks[0], `${nextFirst}fr`)
+        g.style.setProperty(tracks[1], `${1 - nextFirst}fr`)
       }
 
       const onEnd = (ev: PointerEvent) => {
@@ -254,8 +249,20 @@ if (grid) {
         resizer.removeEventListener('pointermove', onMove)
         resizer.removeEventListener('pointerup', onEnd)
         resizer.removeEventListener('pointercancel', onEnd)
-        const final = measurePanelSizes()
-        if (final) savePanelSizes(final)
+
+        // persist the final fraction
+        const firstNow =
+          axis === 'col'
+            ? first.getBoundingClientRect().width
+            : first.getBoundingClientRect().height
+        const secondNow =
+          axis === 'col'
+            ? second.getBoundingClientRect().width
+            : second.getBoundingClientRect().height
+        const total = firstNow + secondNow
+        if (total <= 0) return
+        const fraction = firstNow / total
+        writeSettings({ sizes: { [layout]: { [pair]: fraction } } })
       }
 
       resizer.addEventListener('pointermove', onMove)
@@ -263,6 +270,69 @@ if (grid) {
       resizer.addEventListener('pointercancel', onEnd)
     })
   }
+}
+
+if (grid) {
+  applyLayout(grid)
+  wireResizers(grid)
+}
+
+async function doLogout(): Promise<void> {
+  try {
+    await fetch('/api/logout', { method: 'POST', cache: 'no-store' })
+  } catch {
+    // ignore — we still want to reload
+  }
+  try {
+    // Poison Chrome's cached Basic Auth creds: a request with bogus creds
+    // replaces the cache entry so the next navigation re-prompts.
+    await fetch('/', {
+      method: 'GET',
+      cache: 'no-store',
+      headers: { Authorization: `Basic ${btoa('logout:logout')}` },
+    })
+  } catch {
+    // ignore
+  }
+  window.location.reload()
+}
+
+// ─── theme ───────────────────────────────────────────────────────────────
+// Demonstrates DESIGN.md → CSS-var theming end-to-end with zero code changes
+// to components. Heritage overrides a handful of semantic tokens inline;
+// system/light/dark toggle the `.sui-theme-*` class that the generator emits
+// alongside the :root block.
+const HERITAGE_OVERRIDES: Record<string, string> = {
+  '--sui-colors-primary': '#b8422e',
+  '--sui-colors-primary-hover': '#cb4f37',
+  '--sui-colors-link': '#b8422e',
+  '--sui-colors-link-hover': '#cb4f37',
+  '--sui-colors-on-primary': '#f7f5f2',
+  '--sui-components-button-primary-background-color': '#b8422e',
+  '--sui-components-button-primary-text-color': '#f7f5f2',
+  '--sui-components-button-primary-hover-background-color': '#cb4f37',
+}
+
+function applyTheme(theme: ThemePreset): void {
+  const html = document.documentElement
+  html.classList.remove('sui-theme-light', 'sui-theme-dark', 'sui-theme-heritage')
+  for (const prop of Object.keys(HERITAGE_OVERRIDES)) html.style.removeProperty(prop)
+  if (theme !== 'system') html.classList.add(`sui-theme-${theme}`)
+  if (theme === 'heritage') {
+    for (const [k, v] of Object.entries(HERITAGE_OVERRIDES)) html.style.setProperty(k, v)
+  }
+}
+
+applyTheme(readSettings().theme)
+
+const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement | null
+const settingsPopover = document.getElementById('settings-popover') as HTMLDivElement | null
+if (settingsBtn && settingsPopover && grid) {
+  mountSettingsPopover(settingsBtn, settingsPopover, {
+    onLayoutChange: () => applyLayout(grid),
+    onThemeChange: (t) => applyTheme(t),
+    onLogout: () => doLogout(),
+  })
 }
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -748,10 +818,11 @@ const keywordRoutes: Route[] = [
 async function* realAgent(msgs: PlaygroundMessage[]): AsyncGenerator<AgentStreamEvent> {
   let response: Response
   try {
+    const { model } = readSettings()
     response = await fetch('/api/agent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: msgs }),
+      body: JSON.stringify({ messages: msgs, model }),
     })
   } catch (err) {
     throw new Error(`network: ${err instanceof Error ? err.message : String(err)}`)
@@ -950,44 +1021,6 @@ clearBtn?.addEventListener('click', () => {
   )
   pushChat('system', 'session cleared')
   pushAI('Agent ready.')
-})
-
-// ─── theme switcher ───────────────────────────────────────────────
-// Demonstrates DESIGN.md → CSS-var theming working end-to-end with zero
-// code changes to components. Heritage overrides a handful of semantic
-// tokens inline; system/light/dark toggle the `.sui-theme-*` class that
-// the generator emits alongside the :root block.
-type ThemeKey = 'system' | 'light' | 'dark' | 'heritage'
-const HERITAGE_OVERRIDES: Record<string, string> = {
-  '--sui-colors-primary': '#b8422e',
-  '--sui-colors-primary-hover': '#cb4f37',
-  '--sui-colors-link': '#b8422e',
-  '--sui-colors-link-hover': '#cb4f37',
-  '--sui-colors-on-primary': '#f7f5f2',
-  '--sui-components-button-primary-background-color': '#b8422e',
-  '--sui-components-button-primary-text-color': '#f7f5f2',
-  '--sui-components-button-primary-hover-background-color': '#cb4f37',
-}
-
-function applyTheme(theme: ThemeKey): void {
-  const html = document.documentElement
-  html.classList.remove('sui-theme-light', 'sui-theme-dark', 'sui-theme-heritage')
-  for (const prop of Object.keys(HERITAGE_OVERRIDES)) html.style.removeProperty(prop)
-  if (theme !== 'system') html.classList.add(`sui-theme-${theme}`)
-  if (theme === 'heritage') {
-    for (const [k, v] of Object.entries(HERITAGE_OVERRIDES)) html.style.setProperty(k, v)
-  }
-  for (const btn of document.querySelectorAll<HTMLButtonElement>('#theme-switcher button')) {
-    btn.setAttribute('aria-pressed', btn.dataset.theme === theme ? 'true' : 'false')
-  }
-  localStorage.setItem('sui-theme', theme)
-}
-
-const savedTheme = (localStorage.getItem('sui-theme') as ThemeKey | null) ?? 'system'
-applyTheme(savedTheme)
-document.getElementById('theme-switcher')?.addEventListener('click', (e) => {
-  const btn = (e.target as HTMLElement).closest('button[data-theme]') as HTMLButtonElement | null
-  if (btn) applyTheme(btn.dataset.theme as ThemeKey)
 })
 
 // Initial state

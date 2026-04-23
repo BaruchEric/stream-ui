@@ -8,21 +8,17 @@
   </head>
   <body>
     <header>
-      <div class="header-row">
-        <div>
-          <h1>stream-ui</h1>
-          <p>Human → Agent → Streamed UI. Try: <code>make a button</code>, <code>build a form</code>, <code>show a list</code>, <code>card</code>.</p>
-        </div>
-        <div id="theme-switcher" class="theme-switcher" role="group" aria-label="Theme">
-          <button type="button" data-theme="system" aria-pressed="true">System</button>
-          <button type="button" data-theme="light" aria-pressed="false">Light</button>
-          <button type="button" data-theme="dark" aria-pressed="false">Dark</button>
-          <button type="button" data-theme="heritage" aria-pressed="false">Heritage</button>
-        </div>
+      <div class="header-main">
+        <h1>stream-ui</h1>
+        <p>Human → Agent → Streamed UI. Try: <code>make a button</code>, <code>build a form</code>, <code>show a list</code>, <code>card</code>.</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="settings-btn" class="settings-btn" aria-label="Open settings" aria-expanded="false" aria-haspopup="dialog">⚙️</button>
+        <div id="settings-popover" class="settings-popover" role="dialog" aria-label="Settings" hidden></div>
       </div>
     </header>
 
-    <div class="grid" id="grid">
+    <div class="grid" id="grid" data-layout="default">
       <section class="region region-chat">
         <div class="panel-header">
           <h2>CHAT</h2>
@@ -36,19 +32,21 @@
         </form>
       </section>
 
-      <div class="resizer resizer-v" data-resize-axis="col" role="separator" aria-orientation="vertical" aria-label="Resize chat and AI panels"></div>
+      <div class="resizer" data-pair="chat-ai" role="separator" aria-label="Resize chat and AI panels"></div>
 
       <section class="region region-ai">
         <h2>AI</h2>
         <div id="ai-stream" class="scroll" aria-live="polite"></div>
       </section>
 
-      <div class="resizer resizer-h" data-resize-axis="row" role="separator" aria-orientation="horizontal" aria-label="Resize top row and UI panel"></div>
+      <div class="resizer" data-pair="ai-ui" role="separator" aria-label="Resize AI and UI panels"></div>
 
       <section class="region region-ui">
         <h2>UI</h2>
         <div id="ui-stage" class="scroll"></div>
       </section>
+
+      <div class="resizer" data-pair="top-bottom" role="separator" aria-label="Resize top row and UI panel"></div>
     </div>
 
     <script type="module" src="./main.ts"></script>
